@@ -12,6 +12,10 @@
 
 use fsl_core::*;
 
+/// SPATIAL ROLE: OFF-AXIS ENGINE (applied) — the Facilitator domain cognition built on
+/// the inverted Oracle (free-form → structured jobs, UNK clarification, preset evolution).
+pub mod facilitator;
+
 /// The deterministic engine. Holds no conversation state (only inert config), which
 /// is what keeps the system deterministic: identical context ⇒ identical output.
 #[derive(Clone, Debug, Default)]

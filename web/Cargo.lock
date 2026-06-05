@@ -327,10 +327,77 @@ dependencies = [
 ]
 
 [[package]]
+name = "fsl-actor"
+version = "0.1.0"
+dependencies = [
+ "fsl-core",
+ "fsl-flow",
+]
+
+[[package]]
+name = "fsl-bulge"
+version = "0.1.0"
+dependencies = [
+ "fsl-core",
+]
+
+[[package]]
+name = "fsl-cable"
+version = "0.1.0"
+dependencies = [
+ "fsl-core",
+ "fsl-flow",
+]
+
+[[package]]
+name = "fsl-core"
+version = "0.1.0"
+
+[[package]]
+name = "fsl-flow"
+version = "0.1.0"
+dependencies = [
+ "fsl-core",
+]
+
+[[package]]
+name = "fsl-llm"
+version = "0.1.0"
+dependencies = [
+ "fsl-core",
+]
+
+[[package]]
+name = "fsl-mind"
+version = "0.1.0"
+dependencies = [
+ "fsl-actor",
+ "fsl-bulge",
+ "fsl-cable",
+ "fsl-core",
+ "fsl-flow",
+ "fsl-llm",
+ "fsl-scene",
+]
+
+[[package]]
+name = "fsl-scene"
+version = "0.1.0"
+dependencies = [
+ "fsl-bulge",
+ "fsl-core",
+]
+
+[[package]]
 name = "fsl-web"
 version = "0.2.0"
 dependencies = [
  "axum",
+ "fsl-actor",
+ "fsl-core",
+ "fsl-llm",
+ "fsl-mind",
+ "fsl-scene",
  "leptos",
  "serde",
  "serde_json",

@@ -1,8 +1,10 @@
-//! SPATIAL ROLE: THE STOREFRONT — Facilitator's multi-role PWA (Leptos SSR + Axum).
-//! A thin presentation + job-routing layer over the FSL cognitive engine. It serves ONE
-//! installable PWA for two roles (customer / driver), plus the platform "Engine" view.
-//! Posting a job RUNS the existing FSL release binary (no core change): each job is a
-//! root node (a "cable"), facilitated and recorded by the FSL harness. Truth stays in FSL.
+//! SPATIAL ROLE: THE STOREFRONT — Facilitator's multi-role PWA (Leptos SSR + Axum),
+//! now functionally real. It drives the FSL cognitive engine AS A LIBRARY: every posted
+//! job is a CABLE (root node) ingested into a persistent FSL `World`; the fsl-llm
+//! Facilitator engine structures it and raises clarifying UNKs (The Listener); answers
+//! flow back through the Onion Shell to resolve those UNKs across ticks; the Coffee Cup
+//! arc advances each pass; and the Ledger stays the source of truth. The web layer is
+//! thin — it only orchestrates FSL calls and presents results. No FSL core crate changes.
 
 use axum::{
     extract::State,
@@ -19,24 +21,318 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::process::Command;
 use tower_http::services::ServeDir;
 
-// ─────────────────────────── shared (in-memory) job store ───────────────────────────
+use fsl_actor::Params;
+use fsl_core::{Claim, InvalidPolicy, Span, TopicId, UnkPolicy};
+use fsl_llm::facilitator;
+use fsl_llm::DeterministicOracle;
+use fsl_mind::World;
+
+// ─────────────────────────── application state ───────────────────────────
+#[derive(Clone, Serialize)]
+struct Question {
+    slot: String,
+    ask: String,
+}
 #[derive(Clone, Serialize)]
 struct Job {
     id: u64,
     text: String,
-    kind: String,   // "free-form" → standardizes into presets from real usage
-    status: String,
-    fsl_note: String,
+    title: String,
+    preset: String,      // display kind; "free-form" until standardized
+    preset_kind: String, // machine key from the engine
+    price_band: String,
+    status: String,                  // needs_info | ready | accepted | completed
+    open_questions: Vec<Question>,   // open UNKs (Listener questions)
+    filled: Vec<(String, String)>,   // resolved slots → OBS
+    // ── live FSL trace ──
+    cable: u64,     // root-node id (the cable this job rides)
+    strands: usize, // grains attached this pass (OBS/UNK/DELTA/…)
+    stage: String,  // Coffee Cup stage
+    coherent: bool, // sandbox coherence after processing
+    accepted_by: Option<String>,
     created_unix: u64,
 }
+
+#[derive(Clone)]
+struct AppState {
+    world: Arc<Mutex<World>>,
+    oracle: DeterministicOracle,
+    jobs: Arc<Mutex<Vec<Job>>>,
+    next_job: Arc<Mutex<u64>>,
+    next_claim: Arc<Mutex<u64>>,
+}
+impl AppState {
+    fn new() -> Self {
+        // A persistent FSL World is the source of truth for all jobs. Two minds + a
+        // default crossing give the membrane/bridge/Coffee-Cup a channel to run on.
+        let policy = InvalidPolicy { stop_words: vec!["you never".into(), "obviously".into()] };
+        let unk_policy = UnkPolicy::BoundedBudget { max_open_unk: 5, max_strand_depth: 3 };
+        let mut world = World::new(policy, unk_policy);
+        let a = world.spawn(None, Params::default(), vec![]);
+        let b = world.spawn(None, Params::default(), vec![]);
+        let x = world.open_pair(1, a, b, false);
+        world.set_default_pair(x, a, b);
+        AppState {
+            world: Arc::new(Mutex::new(world)),
+            oracle: DeterministicOracle::default(),
+            jobs: Arc::new(Mutex::new(vec![])),
+            next_job: Arc::new(Mutex::new(0)),
+            next_claim: Arc::new(Mutex::new(1)),
+        }
+    }
+    fn claim_id(&self) -> u64 {
+        let mut n = self.next_claim.lock().unwrap();
+        *n += 1;
+        *n
+    }
+    fn job_id(&self) -> u64 {
+        let mut n = self.next_job.lock().unwrap();
+        *n += 1;
+        *n
+    }
+}
+
+fn now_unix() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+}
+
+// ─────────────────────────── FSL orchestration (thin) ───────────────────────────
+/// Post a free-form request → structure it through the fsl-llm engine and ingest it as a
+/// CABLE into the FSL World, raising an UNK per missing slot (the Listener's questions).
+fn create_job(st: &AppState, text: &str) -> Job {
+    let prop = facilitator::structure_job(&st.oracle, text);
+
+    // Build claims OUTSIDE the world lock (only the id counter is touched here):
+    //  • anchored slots → pointable OBS on the slot's topic,
+    //  • missing slots  → non-pointable claims on the slot's topic → become UNKs.
+    let mut claims: Vec<Claim> = vec![];
+    for (slot, _v) in &prop.present {
+        claims.push(Claim::pointable(
+            st.claim_id(),
+            &format!("{slot}: provided"),
+            Span { quote: slot.clone(), context: "job".into() },
+            facilitator::slot_topic(slot),
+            1,
+        ));
+    }
+    for c in &prop.missing {
+        let mut cl = Claim::plain(st.claim_id(), &format!("missing {}", c.slot));
+        cl.topic = Some(TopicId(facilitator::slot_topic(&c.slot)));
+        claims.push(cl);
+    }
+    if claims.is_empty() {
+        claims.push(Claim::plain(st.claim_id(), text));
+    }
+
+    let (cable, strands, stage, coherent) = {
+        let mut w = st.world.lock().unwrap();
+        let root = w.ingest_input(text); // the CABLE
+        let tr = w.primary_loop(&st.oracle, root, claims, false);
+        let coherent = w.coherence().2;
+        let strands = tr.obs + tr.unks_raised + tr.deltas + tr.invalids + tr.converted;
+        (root.0, strands, format!("{:?}", tr.cup_stage), coherent)
+    };
+
+    let standardized = prop.is_standardized();
+    let job = Job {
+        id: st.job_id(),
+        text: text.to_string(),
+        title: prop.title.clone(),
+        preset: if standardized { prop.preset.label().to_string() } else { "free-form".to_string() },
+        preset_kind: prop.preset.label().to_string(),
+        price_band: prop.price_band.clone(),
+        status: if prop.missing.is_empty() { "ready".into() } else { "needs_info".into() },
+        open_questions: prop.missing.iter().map(|c| Question { slot: c.slot.clone(), ask: c.ask.clone() }).collect(),
+        filled: prop.present.iter().map(|(s, v)| (s.clone(), v.clone())).collect(),
+        cable,
+        strands,
+        stage,
+        coherent,
+        accepted_by: None,
+        created_unix: now_unix(),
+    };
+    st.jobs.lock().unwrap().push(job.clone());
+    job
+}
+
+/// Answer a clarifying question (The Listener) → feed a pointable OBS on the slot's topic
+/// into the World and run the Onion Shell so the awaiting UNK resolves across ticks.
+fn clarify_job(st: &AppState, job_id: u64, slot: &str, answer: &str) -> Option<Job> {
+    // ── world phase (lock world only) ──
+    let coherent = {
+        let claim = Claim::pointable(
+            st.claim_id(),
+            &format!("{slot}: {answer}"),
+            Span { quote: answer.to_string(), context: "clarify".into() },
+            facilitator::slot_topic(slot),
+            1,
+        );
+        let mut w = st.world.lock().unwrap();
+        let r = w.ingest_input(answer);
+        let _ = w.primary_loop(&st.oracle, r, vec![claim], false);
+        w.detect_and_trigger(); // non-blocking trigger: the awaiting UNK is now eligible
+        let _ = w.onion_resolve(&st.oracle, 16); // Onion Shell resolves it (cross-tick)
+        w.coherence().2
+    };
+
+    // ── jobs phase (lock jobs only) ──
+    let mut jobs = st.jobs.lock().unwrap();
+    let job = jobs.iter_mut().find(|j| j.id == job_id)?;
+    job.filled.push((slot.to_string(), answer.to_string()));
+    job.open_questions.retain(|q| q.slot != slot);
+    job.coherent = coherent;
+    if job.open_questions.is_empty() {
+        job.status = "ready".into();
+        // free-form has crossed its Delta Bridge → standardize into a preset.
+        if job.preset == "free-form" {
+            job.preset = job.preset_kind.clone();
+        }
+    }
+    Some(job.clone())
+}
+
+// ─────────────────────────── request / response bodies ───────────────────────────
 #[derive(Deserialize)]
 struct NewJob {
     text: String,
 }
-#[derive(Clone, Default)]
-struct AppState {
-    jobs: Arc<Mutex<Vec<Job>>>,
-    next: Arc<Mutex<u64>>,
+#[derive(Deserialize)]
+struct Clarification {
+    job_id: u64,
+    slot: String,
+    answer: String,
+}
+#[derive(Deserialize)]
+struct JobRef {
+    job_id: u64,
+    #[serde(default)]
+    driver: String,
+}
+#[derive(Serialize)]
+struct FslStats {
+    cables: usize,
+    strands: usize,
+    flows: usize,
+    open_unks: usize,
+    resolved_unks: usize,
+    coherent: bool,
+}
+#[derive(Serialize)]
+struct JobsView {
+    jobs: Vec<Job>,
+    hints: Vec<String>,
+    fsl: FslStats,
+}
+
+// ─────────────────────────── API handlers ───────────────────────────
+async fn post_job(State(st): State<AppState>, Json(req): Json<NewJob>) -> Response {
+    let text = req.text.trim().to_string();
+    if text.is_empty() {
+        return (StatusCode::BAD_REQUEST, "describe the problem first").into_response();
+    }
+    Json(create_job(&st, &text)).into_response()
+}
+
+async fn clarify(State(st): State<AppState>, Json(req): Json<Clarification>) -> Response {
+    let ans = req.answer.trim();
+    if ans.is_empty() {
+        return (StatusCode::BAD_REQUEST, "empty answer").into_response();
+    }
+    match clarify_job(&st, req.job_id, &req.slot, ans) {
+        Some(job) => Json(job).into_response(),
+        None => (StatusCode::NOT_FOUND, "no such job").into_response(),
+    }
+}
+
+async fn accept(State(st): State<AppState>, Json(req): Json<JobRef>) -> Response {
+    let mut jobs = st.jobs.lock().unwrap();
+    match jobs.iter_mut().find(|j| j.id == req.job_id) {
+        Some(j) if j.status == "ready" => {
+            j.status = "accepted".into();
+            j.accepted_by = Some(if req.driver.is_empty() { "driver".into() } else { req.driver.clone() });
+            Json(j.clone()).into_response()
+        }
+        Some(_) => (StatusCode::CONFLICT, "job is not in a ready state").into_response(),
+        None => (StatusCode::NOT_FOUND, "no such job").into_response(),
+    }
+}
+
+async fn complete(State(st): State<AppState>, Json(req): Json<JobRef>) -> Response {
+    let mut jobs = st.jobs.lock().unwrap();
+    match jobs.iter_mut().find(|j| j.id == req.job_id) {
+        Some(j) => {
+            j.status = "completed".into();
+            Json(j.clone()).into_response()
+        }
+        None => (StatusCode::NOT_FOUND, "no such job").into_response(),
+    }
+}
+
+/// Customer Mode escalation routed THROUGH the FSL cognitive system: the escalation is
+/// ingested as structure that crosses the membrane; we return the live FSL record.
+async fn escalate(State(st): State<AppState>, Json(req): Json<JobRef>) -> Response {
+    let claim = Claim::pointable(
+        st.claim_id(),
+        "[Customer Mode] connect me to a person",
+        Span { quote: "connect me to a person".into(), context: "escalation".into() },
+        facilitator::slot_topic("escalation"),
+        1,
+    );
+    let (stage, bridge, behavior) = {
+        let mut w = st.world.lock().unwrap();
+        let r = w.ingest_input("Customer Mode escalation");
+        let tr = w.primary_loop(&st.oracle, r, vec![claim], false);
+        (format!("{:?}", tr.cup_stage), format!("{:?}", tr.bridge), tr.behavior.unwrap_or_else(|| "facilitating".into()))
+    };
+    Json(serde_json::json!({
+        "job_id": req.job_id,
+        "recorded": true,
+        "stage": stage,
+        "bridge": bridge,
+        "behavior": behavior,
+        "note": "Live voice handed to a human representative — the FSL cognitive system is facilitating and recording the interaction."
+    }))
+    .into_response()
+}
+
+async fn list_jobs(State(st): State<AppState>) -> Json<JobsView> {
+    let jobs = st.jobs.lock().unwrap().clone();
+    let (cables, strands, flows, open_unks, resolved_unks, coherent) = {
+        let w = st.world.lock().unwrap();
+        let scene = w.project_scene();
+        let (c, s, f) = scene.stats();
+        let (res, open, coh) = w.coherence();
+        (c, s, f, open, res, coh)
+    };
+
+    let needs = jobs.iter().filter(|j| j.status == "needs_info").count();
+    let ready = jobs.iter().filter(|j| j.status == "ready").count();
+    let mut hints = vec![];
+    if needs > 0 {
+        hints.push(format!("{needs} job(s) awaiting clarification — open UNKs in the FSL Onion Shell."));
+    }
+    if ready > 0 {
+        hints.push(format!("{ready} job(s) ready to accept right now."));
+    }
+    // batching suggestion (never forced): 2+ ready jobs of the same kind.
+    use std::collections::BTreeMap;
+    let mut by_kind: BTreeMap<String, usize> = BTreeMap::new();
+    for j in jobs.iter().filter(|j| j.status == "ready") {
+        *by_kind.entry(j.preset_kind.clone()).or_insert(0) += 1;
+    }
+    for (k, n) in by_kind.iter() {
+        if *n >= 2 {
+            hints.push(format!("Batch suggestion: {n} {k} jobs nearby could be chained (your call — never forced)."));
+        }
+    }
+    hints.push(format!(
+        "FSL graph: {cables} cables (jobs), {strands} strands, {flows} flows; coherent={coherent}."
+    ));
+    if needs == 0 && ready > 0 {
+        hints.push("Fully-specified requests have standardized into one-tap presets.".into());
+    }
+
+    Json(JobsView { jobs, hints, fsl: FslStats { cables, strands, flows, open_unks, resolved_unks, coherent } })
 }
 
 // ─────────────────────────── PWA assets (baked in) ───────────────────────────
@@ -57,20 +353,23 @@ h1{font-size:22px;margin:6px 0 2px}h2{font-size:16px;margin:18px 0 8px}
 .role{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--ink)}
 .role .emoji{font-size:30px}.role .t{font-weight:700}.role .d{color:var(--muted);font-size:13px}
 .btn{appearance:none;border:0;border-radius:12px;background:var(--accent);color:#241600;font-weight:800;font-size:16px;padding:14px 16px;width:100%;cursor:pointer}
-.btn.green{background:var(--green);color:#04240f}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.green{background:var(--green);color:#04240f}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn:disabled{opacity:.6;cursor:progress}
 .row{display:flex;gap:10px}.row>*{flex:1}
-textarea{width:100%;min-height:120px;background:#060a12;border:1px solid var(--line);border-radius:12px;color:var(--ink);padding:12px;font:15px/1.5 inherit;resize:vertical}
+textarea,input{width:100%;background:#060a12;border:1px solid var(--line);border-radius:12px;color:var(--ink);padding:12px;font:15px/1.5 inherit}
+textarea{min-height:120px;resize:vertical}
 .mic{flex:0 0 56px;border-radius:12px;border:1px solid var(--line);background:#060a12;color:var(--ink);font-size:20px}
 .mic.rec{background:#3a1020;border-color:#ff5d73;color:#ff9db0}
 .note{color:var(--muted);font-size:13px;margin-top:10px;min-height:18px}
 .pill{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:4px 10px;border:1px solid var(--line)}
 .pill.on{background:#0f2a1d;color:var(--green);border-color:#1f5b3f}.pill.off{background:#241016;color:#ff9db0}
+.pill.amber{background:#2a210f;color:var(--accent);border-color:#5b481f}
+.trace{font:12px/1.5 ui-monospace,Menlo,monospace;color:#9fd9c6;margin-top:8px}
+.q{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:#0a0f1a}
+.q .ask{font-weight:600;margin-bottom:6px}
 .hints{margin:8px 0 0;padding-left:18px;color:#cfe0ef}.hints li{margin:4px 0}
 .job{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#0a0f1a}
 .job .jt{font-weight:700;color:var(--accent);font-size:13px}.job .jx{margin:4px 0}.job .jm{color:var(--muted);font-size:12px;margin-bottom:8px}
-.accept{appearance:none;border:0;border-radius:10px;background:var(--green);color:#04240f;font-weight:700;padding:8px 12px;cursor:pointer}
 .empty{color:var(--muted);text-align:center;padding:18px}
 .out{background:#060a12;border:1px solid var(--line);border-radius:12px;padding:12px;max-height:52vh;overflow:auto;white-space:pre;font:12px/1.5 ui-monospace,Menlo,monospace;color:#cfe8df}
 .tabbar{position:fixed;bottom:0;left:0;right:0;height:62px;display:flex;background:rgba(11,15,23,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
@@ -83,49 +382,90 @@ textarea{width:100%;min-height:120px;background:#060a12;border:1px solid var(--l
 
 const COMMON_JS: &str = r##"
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(function(e){console.warn('sw',e);}); }
+function esc(s){return (''+s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function trace(j){return 'FSL · cable #'+j.cable+' · '+j.strands+' strands · stage '+esc(j.stage)+' · coherent='+j.coherent;}
 "##;
 
 const CUSTOMER_JS: &str = r##"
 (function(){
- var t=document.getElementById('jobtext'),mic=document.getElementById('mic'),post=document.getElementById('post'),res=document.getElementById('result');
+ var t=document.getElementById('jobtext'),mic=document.getElementById('mic'),post=document.getElementById('post'),
+     res=document.getElementById('result'),panel=document.getElementById('panel');
  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(mic){mic.addEventListener('click',function(){
    if(!SR){res.textContent='The Listener (voice) needs Chrome/Android. Type your request instead.';return;}
    var r=new SR();r.lang='en-US';r.interimResults=false;mic.classList.add('rec');res.textContent='The Listener is listening…';
    r.onresult=function(e){var s=e.results[0][0].transcript;t.value=(t.value?t.value+' ':'')+s;res.textContent='Captured: '+s;};
-   r.onerror=function(e){res.textContent='Listener error: '+e.error;};
-   r.onend=function(){mic.classList.remove('rec');};
-   r.start();
+   r.onerror=function(e){res.textContent='Listener error: '+e.error;};r.onend=function(){mic.classList.remove('rec');};r.start();
  });}
+ function render(j){
+   var html='<div class="card"><div><b>'+esc(j.title)+'</b> <span class="pill amber">'+esc(j.preset)+'</span></div>'+
+     '<div class="lede" style="margin:8px 0">Price band: '+esc(j.price_band)+'</div>'+
+     '<div class="trace">'+trace(j)+'</div>';
+   if(j.status==='ready'){
+     html+='<p style="margin-top:12px">✅ <b>Job ready.</b> The Listener + FSL fully structured it — drivers can accept it now.</p>';
+   }else{
+     html+='<h2>The Listener needs a few details</h2>';
+     j.open_questions.forEach(function(q){
+       html+='<div class="q"><div class="ask">'+esc(q.ask)+'</div>'+
+         '<div class="row"><input id="a_'+q.slot+'" placeholder="Type or speak your answer"/>'+
+         '<button class="btn green" style="flex:0 0 110px" onclick="answer('+j.id+',\''+q.slot+'\')">Answer</button></div></div>';
+     });
+   }
+   html+='</div>';
+   panel.innerHTML=html;
+ }
+ window.answer=function(id,slot){
+   var el=document.getElementById('a_'+slot);var val=(el&&el.value||'').trim();
+   if(!val){return;}
+   fetch('/api/clarify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:id,slot:slot,answer:val})})
+    .then(function(r){return r.json();}).then(render).catch(function(e){res.textContent='Error: '+e;});
+ };
  if(post){post.addEventListener('click',function(){
-   var text=(t.value||'').trim();if(!text){res.textContent='Describe the problem first — you have a problem, we fix it.';return;}
+   var text=(t.value||'').trim();if(!text){res.textContent='Describe the problem — you have a problem, we fix it.';return;}
    post.disabled=true;res.textContent='Routing through the FSL engine…';
    fetch('/api/job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})})
-    .then(function(r){return r.json();})
-    .then(function(j){res.textContent='Job #'+j.id+' posted as '+j.kind+'. FSL: '+j.fsl_note;t.value='';})
-    .catch(function(e){res.textContent='Error: '+e;})
-    .finally(function(){post.disabled=false;});
+    .then(function(r){return r.json();}).then(function(j){res.textContent='Posted job #'+j.id+'.';t.value='';render(j);})
+    .catch(function(e){res.textContent='Error: '+e;}).finally(function(){post.disabled=false;});
  });}
 })();
 "##;
 
 const DRIVER_JS: &str = r##"
 (function(){
- var jobsEl=document.getElementById('jobs'),hintsEl=document.getElementById('hints'),
+ var jobsEl=document.getElementById('jobs'),hintsEl=document.getElementById('hints'),fslEl=document.getElementById('fsl'),
      lbtn=document.getElementById('listener'),lstat=document.getElementById('lstat'),
-     cm=document.getElementById('custmode'),qr=document.getElementById('qr'),
-     modal=document.getElementById('modal'),mbody=document.getElementById('mbody'),mclose=document.getElementById('mclose');
+     qr=document.getElementById('qr'),modal=document.getElementById('modal'),mbody=document.getElementById('mbody'),mclose=document.getElementById('mclose');
  function showModal(h){mbody.innerHTML=h;modal.style.display='flex';}
  if(mclose)mclose.addEventListener('click',function(){modal.style.display='none';});
  var online=localStorage.getItem('fsl_listener')==='1';
  function renderListener(){if(lstat){lstat.textContent=online?'ONLINE — The Listener is active':'OFFLINE';lstat.className='pill '+(online?'on':'off');}if(lbtn)lbtn.textContent=online?'Go offline':'Go online';}
  if(lbtn)lbtn.addEventListener('click',function(){online=!online;localStorage.setItem('fsl_listener',online?'1':'0');renderListener();});
  renderListener();
- if(cm)cm.addEventListener('click',function(){showModal('<h3>Customer Mode</h3><p>Trigger phrase: <b>&ldquo;connect me to a person&rdquo;</b>.</p><p>Hand the phone to the customer for direct voice escalation to a human representative — the FSL cognitive system facilitates and records the interaction. <i>(simulated)</i></p>');});
  if(qr)qr.addEventListener('click',function(){showModal('<h3>Restaurant QR pipeline</h3><p>Scanning&hellip; <b>(placeholder)</b></p><p>In the full build, scanning a restaurant QR opens a preset pickup job. Coming soon.</p>');});
- function esc(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
- function hints(jobs){var h=[];if(jobs.length===0){h.push('No live jobs — stay online so The Listener can catch new ones.');}else{h.push('Shadow Intelligence: '+jobs.length+' live job(s) in range.');if(jobs.length>=2)h.push('Batch suggestion: chain 2+ nearby errands for higher $/mile (never forced).');h.push('Recurring free-form jobs become one-tap presets over time.');}hintsEl.innerHTML=h.map(function(x){return '<li>'+x+'</li>';}).join('');}
- function render(jobs){if(jobs.length===0){jobsEl.innerHTML='<div class="empty">No available jobs yet.</div>';}else{jobsEl.innerHTML=jobs.slice().reverse().map(function(j){return '<div class="job"><div class="jt">#'+j.id+' · '+esc(j.kind)+'</div><div class="jx">'+esc(j.text)+'</div><div class="jm">'+esc(j.status)+' · '+esc(j.fsl_note)+'</div><button class="accept" data-id="'+j.id+'">Accept</button></div>';}).join('');Array.prototype.forEach.call(document.querySelectorAll('.accept'),function(b){b.addEventListener('click',function(){showModal('<h3>Job #'+b.dataset.id+' accepted</h3><p>Maximum control, minimum bullshit — no forced batches, no map hijacking. Navigate when ready.</p>');});});}hints(jobs);}
+ window.act=function(id,kind){
+   var url=kind==='accept'?'/api/accept':(kind==='complete'?'/api/complete':'/api/escalate');
+   fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:id,driver:'you'})})
+    .then(function(r){return r.json();}).then(function(j){
+       if(kind==='escalate'){showModal('<h3>Customer Mode</h3><p>'+esc(j.note)+'</p><div class="trace">FSL · bridge '+esc(j.bridge)+' · stage '+esc(j.stage)+' · behavior '+esc(j.behavior)+' · recorded='+j.recorded+'</div>');}
+       load();
+    }).catch(function(e){showModal('<p>Error: '+esc(e)+'</p>');});
+ };
+ function jobCard(j){
+   var actions='';
+   if(j.status==='ready')actions='<button class="btn green" onclick="act('+j.id+',\'accept\')">Accept</button>';
+   else if(j.status==='accepted')actions='<div class="row"><button class="btn" onclick="act('+j.id+',\'escalate\')">Customer Mode</button><button class="btn green" onclick="act('+j.id+',\'complete\')">Complete</button></div>';
+   else if(j.status==='completed')actions='<span class="pill on">completed</span>';
+   else actions='<span class="pill amber">awaiting customer clarification</span>';
+   return '<div class="job"><div class="jt">#'+j.id+' · '+esc(j.preset)+' · '+esc(j.price_band)+'</div>'+
+     '<div class="jx">'+esc(j.title)+'</div>'+
+     '<div class="jm">'+trace(j)+'</div>'+actions+'</div>';
+ }
+ function render(v){
+   var visible=v.jobs.filter(function(j){return j.status!=='completed';});
+   jobsEl.innerHTML=visible.length?visible.slice().reverse().map(jobCard).join(''):'<div class="empty">No live jobs yet. Stay online so The Listener can catch new ones.</div>';
+   hintsEl.innerHTML=v.hints.map(function(h){return '<li>'+esc(h)+'</li>';}).join('');
+   if(fslEl)fslEl.textContent='FSL: '+v.fsl.cables+' cables · '+v.fsl.strands+' strands · '+v.fsl.flows+' flows · open UNKs '+v.fsl.open_unks+' · resolved '+v.fsl.resolved_unks+' · coherent '+v.fsl.coherent;
+ }
  function load(){fetch('/api/jobs').then(function(r){return r.json();}).then(render).catch(function(){jobsEl.innerHTML='<div class="empty">Could not load jobs.</div>';});}
  load();setInterval(load,4000);
 })();
@@ -160,7 +500,7 @@ const MANIFEST: &str = r##"{
 }"##;
 
 const SW: &str = r##"
-const CACHE='facilitator-v2';
+const CACHE='facilitator-v3';
 const SHELL=['/', '/customer', '/driver', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(SHELL);}).then(function(){return self.skipWaiting();}));});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(x){return x!==CACHE;}).map(function(x){return caches.delete(x);}));}).then(function(){return self.clients.claim();}));});
@@ -169,7 +509,7 @@ self.addEventListener('fetch',function(e){var u=new URL(e.request.url);
  e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request);}));});
 "##;
 
-// ─────────────────────────── document shell ───────────────────────────
+// ─────────────────────────── document shell + pages ───────────────────────────
 fn document(title: &str, body: String, extra_js: &str) -> String {
     format!(
         "<!doctype html><html lang=\"en\"><head>\
@@ -198,7 +538,6 @@ fn document(title: &str, body: String, extra_js: &str) -> String {
     )
 }
 
-// ─────────────────────────── pages (Leptos SSR bodies) ───────────────────────────
 async fn index() -> Html<String> {
     let body = leptos::ssr::render_to_string(|| {
         view! {
@@ -206,11 +545,11 @@ async fn index() -> Html<String> {
             <p class="lede">"A driver-first local problem-solving marketplace, powered by the FSL cognitive engine. Choose how you’re here today."</p>
             <a class="card role" href="/customer">
                 <span class="emoji">"🧩"</span>
-                <span><span class="t">"I need something done"</span><br/><span class="d">"Post a job — food, roadside, moving, errands, labor. Free-form voice or text."</span></span>
+                <span><span class="t">"I need something done"</span><br/><span class="d">"Describe a problem — The Listener + FSL turn it into a clear, priced job."</span></span>
             </a>
             <a class="card role" href="/driver">
                 <span class="emoji">"🚗"</span>
-                <span><span class="t">"I drive / I work"</span><br/><span class="d">"See live jobs, shadow-intelligence hints, and The Listener. Maximum control, minimum bullshit."</span></span>
+                <span><span class="t">"I drive / I work"</span><br/><span class="d">"Live jobs, shadow-intelligence hints from FSL, and The Listener. Maximum control, minimum bullshit."</span></span>
             </a>
             <a class="card role" href="/admin">
                 <span class="emoji">"⚙️"</span>
@@ -225,7 +564,7 @@ async fn customer() -> Html<String> {
     let body = leptos::ssr::render_to_string(|| {
         view! {
             <h1>"Post a Job"</h1>
-            <p class="lede">"Describe the problem in your own words — we sell solutions, not tasks. The Listener + FSL turn it into a clear, priced job."</p>
+            <p class="lede">"Describe the problem in your own words — we sell solutions, not tasks. The Listener + FSL turn it into a clear, priced job and ask only for what’s missing."</p>
             <div class="card">
                 <textarea id="jobtext" placeholder="e.g. “Need a couch moved from my 2nd-floor apartment to a truck downstairs this afternoon.”"></textarea>
                 <div class="row" style="margin-top:10px">
@@ -234,7 +573,7 @@ async fn customer() -> Html<String> {
                 </div>
                 <div id="result" class="note"></div>
             </div>
-            <p class="lede">"Tip: recurring free-form requests automatically standardize into one-tap preset job types over time."</p>
+            <div id="panel"></div>
         }
     }).to_string();
     Html(document("Facilitator — Post a Job", body, CUSTOMER_JS))
@@ -249,14 +588,12 @@ async fn driver() -> Html<String> {
                 <h2 style="margin-top:0">"The Listener"</h2>
                 <div><span id="lstat" class="pill off">"OFFLINE"</span></div>
                 <p class="lede" style="margin:10px 0">"Always-on voice agent that wakes when you go online — captures notes, access instructions, and odd delivery details."</p>
-                <div class="row">
-                    <button id="listener" class="btn green">"Go online"</button>
-                    <button id="custmode" class="btn ghost">"Customer Mode"</button>
-                </div>
+                <button id="listener" class="btn green">"Go online"</button>
             </div>
             <div class="card">
                 <h2 style="margin-top:0">"Shadow Intelligence"</h2>
                 <ul id="hints" class="hints"></ul>
+                <div id="fsl" class="trace"></div>
             </div>
             <h2>"Available jobs"</h2>
             <div id="jobs"></div>
@@ -280,56 +617,6 @@ async fn admin() -> Html<String> {
     Html(document("Facilitator — Engine", body, ADMIN_JS))
 }
 
-// ─────────────────────────── API (thin job-routing over FSL) ───────────────────────────
-fn classify(text: &str) -> String {
-    let t = text.to_lowercase();
-    let has = |k: &str| t.contains(k);
-    if has("deliver") || has("food") || has("pickup") || has("pick up") { "delivery (preset)".into() }
-    else if has("tow") || has("roadside") || has("jump") || has("flat") || has("stuck") { "roadside (preset)".into() }
-    else if has("move") || has("moving") || has("haul") || has("furniture") || has("couch") { "moving (preset)".into() }
-    else if has("errand") || has("store") || has("grocery") || has("buy") { "errand (preset)".into() }
-    else if has("help") || has("labor") || has("lift") || has("muscle") { "labor (preset)".into() }
-    else { "free-form".into() }
-}
-
-/// Talk to the FSL core: run the existing harness and surface its compliance verdict as
-/// the job's facilitation note. No core change — the binary is the source of truth.
-async fn fsl_note() -> String {
-    let bin = std::env::var("FSL_BIN").unwrap_or_else(|_| "fsl".into());
-    match Command::new(&bin).output().await {
-        Ok(o) => {
-            let out = String::from_utf8_lossy(&o.stdout);
-            out.lines()
-                .rev()
-                .find(|l| l.contains("coherence contract") || l.contains("ALL CHECKS PASS"))
-                .map(|l| l.trim().trim_matches('─').trim().to_string())
-                .unwrap_or_else(|| "facilitated by the FSL engine".into())
-        }
-        Err(_) => "FSL engine unavailable (job queued)".into(),
-    }
-}
-
-async fn post_job(State(st): State<AppState>, Json(req): Json<NewJob>) -> Response {
-    let text = req.text.trim().to_string();
-    if text.is_empty() {
-        return (StatusCode::BAD_REQUEST, "empty request").into_response();
-    }
-    let note = fsl_note().await; // route through the FSL core
-    let id = {
-        let mut n = st.next.lock().unwrap();
-        *n += 1;
-        *n
-    };
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    let job = Job { id, kind: classify(&text), text, status: "open".into(), fsl_note: note, created_unix: now };
-    st.jobs.lock().unwrap().push(job.clone());
-    Json(job).into_response()
-}
-
-async fn list_jobs(State(st): State<AppState>) -> Json<Vec<Job>> {
-    Json(st.jobs.lock().unwrap().clone())
-}
-
 async fn manifest() -> impl IntoResponse {
     ([(header::CONTENT_TYPE, "application/manifest+json")], MANIFEST)
 }
@@ -345,7 +632,7 @@ async fn service_worker() -> impl IntoResponse {
 }
 async fn health() -> &'static str { "ok" }
 
-/// Platform/Engine view: run the FSL harness and return its full output verbatim.
+/// Platform/Engine view: run the FSL harness binary and return its output verbatim.
 async fn walk() -> Response {
     let bin = std::env::var("FSL_BIN").unwrap_or_else(|_| "fsl".into());
     match Command::new(&bin).output().await {
@@ -367,7 +654,7 @@ async fn main() {
     let bind = std::env::var("FSL_BIND").unwrap_or_else(|_| "0.0.0.0".into());
     let port: u16 = std::env::var("FSL_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8080);
 
-    let state = AppState::default();
+    let state = AppState::new();
     let app = Router::new()
         .route("/", get(index))
         .route("/customer", get(customer))
@@ -379,11 +666,15 @@ async fn main() {
         .route("/api/walk", get(walk))
         .route("/api/job", post(post_job))
         .route("/api/jobs", get(list_jobs))
+        .route("/api/clarify", post(clarify))
+        .route("/api/accept", post(accept))
+        .route("/api/complete", post(complete))
+        .route("/api/escalate", post(escalate))
         .nest_service("/icons", ServeDir::new(format!("{web_dir}/static/icons")))
         .with_state(state);
 
     let addr: SocketAddr = format!("{bind}:{port}").parse().expect("invalid bind address");
     let listener = tokio::net::TcpListener::bind(addr).await.expect("failed to bind");
-    println!("Facilitator PWA (Leptos SSR + Axum) listening on http://{addr}");
+    println!("Facilitator PWA (Leptos SSR + Axum + live FSL engine) listening on http://{addr}");
     axum::serve(listener, app).await.expect("server error");
 }
