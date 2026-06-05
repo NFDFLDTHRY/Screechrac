@@ -1,7 +1,11 @@
 # Rust build artifacts
 /target
+/web/target
 **/*.rs.bk
 Cargo.lock.orig
+
+# generated PWA icons (produced by setup.sh via imagemagick)
+/web/static/icons/
 
 # editor / OS noise
 .DS_Store
