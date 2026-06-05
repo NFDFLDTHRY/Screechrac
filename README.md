@@ -88,13 +88,21 @@ non-negotiable 1:1 mapping that every crate, type, and file obeys.
 | `fsl-mind`  | THE ASSEMBLER | the `World`: parallel cables/strands, Onion Shell, the walker |
 | `fsl` (bin) | THE WALK      | the end-to-end scene tour + the hologram compliance scan |
 
-## Run it
+## Testing — local only (Rust's native test system)
+
+This project uses **only Rust's native test runner** — there is **no GitHub Actions / CI**.
+Run the full test suite locally before pushing:
 
 ```sh
-cargo run            # walk the whole 3D scene graph end to end + compliance scan
-cargo test           # the contract guardrails (bridge / cup / scene / pipeline / source)
-cargo check --workspace --all-targets
+cargo test --workspace                       # all FSL core crates (bridge / cup / scene / pipeline / source)
+cargo test --manifest-path web/Cargo.toml    # the Facilitator web crate (detached workspace)
+cargo run --quiet                            # walk the 3D scene graph + hologram-compliance scan
+cargo check --workspace --all-targets        # fast type/lint pass
 ```
+
+The contract guardrails are enforced by these tests plus the runtime scan in
+[`src/hologram_compliance.rs`](./src/hologram_compliance.rs) and the source-level checks in
+`crates/fsl-mind/tests/hologram_source.rs` — all run via `cargo test`, on your machine.
 
 ## Invariants the build enforces
 
