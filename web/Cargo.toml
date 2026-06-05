@@ -1,21 +1,32 @@
 # SPATIAL ROLE: THE STOREFRONT — Facilitator's multi-role PWA; a thin presentation +
-# job-routing layer over the FSL harness. Detached [workspace] so the FSL core is untouched.
+# job-routing layer over the FSL engine, now durable (SQLite) and authenticated. Detached
+# [workspace] so the FSL core crates remain 100% unchanged.
 [package]
 name = "fsl-web"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
-description = "Facilitator — multi-role (customer/driver) PWA over the FSL cognitive engine. Presentation only."
+description = "Facilitator — durable, authenticated multi-role PWA over the FSL cognitive engine. Presentation + job-routing only."
 
 # Intentionally its own workspace: this crate never alters the FSL core crates.
 [workspace]
 
 [dependencies]
 axum = "0.7"
+axum-extra = { version = "0.9", features = ["cookie-signed"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "sync"] }
 tower-http = { version = "0.5", features = ["fs"] }
 leptos = { version = "0.6", features = ["ssr"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# durability + auth (application infrastructure; no cognition lives here)
+rusqlite = { version = "0.31", features = ["bundled"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.24"
+argon2 = "0.5"
+rand = "0.8"
+sha2 = "0.10"
+time = "0.3"
 
 # The FSL cognitive engine, used as a LIBRARY (all intelligence stays in FSL; the web
 # layer only orchestrates and presents). Path deps reach the unchanged core crates.
@@ -24,6 +35,10 @@ fsl-actor = { path = "../crates/fsl-actor" }
 fsl-mind  = { path = "../crates/fsl-mind" }
 fsl-scene = { path = "../crates/fsl-scene" }
 fsl-llm   = { path = "../crates/fsl-llm" }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+tempfile = "3"
 
 [profile.release]
 opt-level = 2

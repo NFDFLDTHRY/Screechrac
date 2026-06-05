@@ -15,7 +15,7 @@ summarized. Every change to this codebase must be audited against their verbatim
 content. Their byte-for-byte integrity is enforced by the `reference_docs_immutable`
 guardrail in [`src/hologram_compliance.rs`](./src/hologram_compliance.rs).
 
-## Facilitator — the first *functional* application of FSL
+## Facilitator — the first *production-grade* application of FSL (single-node)
 
 **[Facilitator](./references/facilitator/FACILITATOR_Project_Manifest_v1.1.md)** is the
 first real-world application built on top of the FSL cognitive engine: a **driver-first
@@ -24,8 +24,15 @@ single installable PWA under [`web/`](./web) (Leptos SSR + Axum) and serves
 **customers** (post free-form/voice jobs), **drivers** (accept and complete jobs), and a
 platform **Engine** view.
 
-It is now **functionally real, powered end-to-end by FSL** (the web layer stays thin —
-all intelligence lives in FSL):
+It is **durable and authenticated** (single-node, production-grade): an embedded **SQLite**
+database is the application's source of truth (accounts, jobs, clarifications, preset
+stats); the FSL `World` is an in-memory **projection rebuilt by replaying stored jobs on
+boot**, so data survives restarts. Accounts use **argon2** hashing + a **signed, HTTP-only
+session cookie**, and routes are **role-gated** (customer / driver / admin) — real
+identity, ready for payments (GoDaddy) to hook into a clean `PaymentProvider` seam.
+*Hive Calls, Guardian Mode, and the full QR pipeline are deferred to later PRs (not faked).*
+
+It is **powered end-to-end by FSL** (the web layer stays thin — all intelligence lives in FSL):
 
 - The custom **fsl-llm engine** ([`crates/fsl-llm/src/facilitator.rs`](./crates/fsl-llm/src/facilitator.rs))
   turns a free-form request into a structured job through the **inverted Oracle** — it
@@ -38,9 +45,15 @@ all intelligence lives in FSL):
 - **Customer Mode** escalation routes through the FSL cognitive system; the **driver
   dashboard** shows live shadow-intelligence hints pulled from FSL state.
 
-**No FSL core crate is changed** except the explicitly-commissioned `fsl-llm` engine;
-the scene graph, the Coherence Contract, and the three conceptual references remain
-immutable. Deploy the whole thing with [`setup.sh`](./setup.sh).
+- **Data-driven preset evolution:** once a kind reaches a threshold of fully-specified
+  jobs, it is promoted to a **one-tap preset** that posts a job already `ready`.
+- **Deeper Shadow Intelligence** (`/api/shadow`): open vs resolved UNK ratios, Coffee-Cup
+  stage, stalled-clarification detection, and live scene-graph growth.
+
+**No FSL core crate is changed**; persistence and auth are application infrastructure in
+the detached [`web/`](./web) crate (its own `[workspace]`). The scene graph, the Coherence
+Contract, and the three conceptual references remain immutable. Single-node is the current
+boundary (horizontal scaling is future). Deploy the whole thing with [`setup.sh`](./setup.sh).
 
 ---
 
