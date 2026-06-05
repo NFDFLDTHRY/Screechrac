@@ -106,11 +106,16 @@ FSL_BIN="$FSL_HOME/target/release/fsl"
 [ -x "$FSL_BIN" ] || die "release binary not found at $FSL_BIN"
 log "FSL harness built: $FSL_BIN"
 
-# ═════════════════════════════ 4) generate the Leptos/Axum PWA ═════════════════════════════
-# A SELF-CONTAINED crate (its own [workspace], so the FSL workspace is untouched). It is a
-# thin presentation layer: /api/walk runs the existing FSL binary and returns its output.
-log "generating the web platform (Leptos SSR + Axum) under $WEB_DIR…"
+# ═════════════════════════════ 4) the Leptos/Axum PWA ═════════════════════════════
+# The repo SHIPS the web platform at /opt/fsl/web (Facilitator's multi-role PWA), a
+# self-contained crate (its own [workspace], so the FSL workspace is untouched). We use
+# the committed crate when present and only generate a default if it is missing. It is a
+# thin presentation layer: /api/walk and /api/job run the existing FSL binary.
 mkdir -p "$WEB_DIR/src" "$WEB_DIR/static/icons"
+if [ -f "$WEB_DIR/Cargo.toml" ] && [ -f "$WEB_DIR/src/main.rs" ]; then
+  log "using the committed web platform at $WEB_DIR (Facilitator multi-role PWA)"
+else
+  log "generating the default web platform (Leptos SSR + Axum) under $WEB_DIR…"
 
 cat > "$WEB_DIR/Cargo.toml" <<'CARGO_EOF'
 # SPATIAL ROLE: THE STOREFRONT — a thin presentation layer over the FSL harness (no core changes).
@@ -338,6 +343,7 @@ async fn main() {
     axum::serve(listener, app).await.expect("server error");
 }
 RUST_EOF
+fi
 
 # ── PWA assets that must be real files: the icons (manifest + service worker are baked in) ──
 gen_icons() {

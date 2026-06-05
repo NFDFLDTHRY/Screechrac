@@ -17,6 +17,23 @@ and merciless reviews. Their byte-for-byte integrity is enforced by the
 `reference_docs_immutable` check in `src/hologram_compliance.rs` (exact length + content
 hash); any modification, even a single byte, fails the compliance scan.
 
+## First real-world application: Facilitator
+
+**Facilitator** (the driver-first local problem-solving marketplace —
+[`references/facilitator/FACILITATOR_Project_Manifest_v1.1.md`](./references/facilitator/FACILITATOR_Project_Manifest_v1.1.md))
+is the first application built on top of FSL. It is bound by this contract as a strict
+**presentation + job-routing layer**, and the mapping is exact:
+
+- A posted **job** is a **root node** — a *cable*, the primary carrier axis.
+- Clarifications / observations / unknowns a job accrues are **strands** (radial by
+  degree-of-separation).
+- The Listener / Customer-Mode escalation is a **flow** — the sole connective primitive.
+- The FSL **Ledger stays the source of truth**; Facilitator only navigates and presents it.
+
+The application lives entirely in the detached [`web/`](./web) crate (its own
+`[workspace]`). **No FSL core crate, the scene graph, this contract, or the three
+conceptual references may be changed by it** — those remain immutable.
+
 ---
 
 The cable/strand/bulge spatial methodology is the **literal structural organizing

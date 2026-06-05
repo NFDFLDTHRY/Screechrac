@@ -1,0 +1,21 @@
+# SPATIAL ROLE: THE STOREFRONT — Facilitator's multi-role PWA; a thin presentation +
+# job-routing layer over the FSL harness. Detached [workspace] so the FSL core is untouched.
+[package]
+name = "fsl-web"
+version = "0.2.0"
+edition = "2021"
+description = "Facilitator — multi-role (customer/driver) PWA over the FSL cognitive engine. Presentation only."
+
+# Intentionally its own workspace: this crate never alters the FSL core crates.
+[workspace]
+
+[dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "sync"] }
+tower-http = { version = "0.5", features = ["fs"] }
+leptos = { version = "0.6", features = ["ssr"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 2

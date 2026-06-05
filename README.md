@@ -15,6 +15,20 @@ summarized. Every change to this codebase must be audited against their verbatim
 content. Their byte-for-byte integrity is enforced by the `reference_docs_immutable`
 guardrail in [`src/hologram_compliance.rs`](./src/hologram_compliance.rs).
 
+## Facilitator — the first real-world application of FSL
+
+**[Facilitator](./references/facilitator/FACILITATOR_Project_Manifest_v1.1.md)** is the
+first real-world application built on top of the FSL cognitive engine: a **driver-first
+local problem-solving marketplace** — *"You have a problem. We fix it."* It ships as the
+single installable PWA under [`web/`](./web) (Leptos SSR + Axum) and serves two roles —
+**customers** who post free-form/voice jobs and **drivers** who accept them — plus the
+platform **Engine** view that walks the FSL scene graph.
+
+Facilitator is a **thin presentation + job-routing layer only**: every posted job is a
+root node (a *cable*) routed through the existing FSL harness, and **no FSL core crate is
+changed**. See the manifest and `web/src/main.rs` for the mapping onto the
+cable/strand/bulge methodology. Deploy the whole thing with [`setup.sh`](./setup.sh).
+
 ---
 
 A Rust workspace where the **cable / strand / bulge** spatial methodology is the
