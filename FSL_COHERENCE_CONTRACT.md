@@ -71,6 +71,14 @@ human-walkable and machine-navigable exactly like the 3D scene graph.
 | **Mind**  | Only the assembler/walker that drives the loop and walks the scene.                                 | `fsl-mind` |
 | **LLM**   | The inverted Oracle: functions CALL it; it returns only element arrays; fresh context every call.   | `fsl-llm` |
 
+## Testing — local only (Rust's native test system)
+This project is **self-contained**: there is **no GitHub Actions / CI infrastructure**.
+All verification is performed locally with Rust's native test runner —
+`cargo test --workspace` (the FSL core crates) and
+`cargo test --manifest-path web/Cargo.toml` (the Facilitator web crate), with the
+end-to-end walk via `cargo run`. The compliance checklist below is enforced through these
+`cargo test` runs and the runtime scan in `hologram_compliance.rs`, on the engineer's machine.
+
 ## Compliance checklist (enforced by `hologram_compliance.rs`)
 - [ ] FLOW is the sole connective primitive — every Graph relationship becomes a `Flow`; no other connection type exists.
 - [ ] The explosion LENS never mutates truth — ledger length is identical before/after `explode`.
