@@ -1,0 +1,7 @@
+# SPATIAL ROLE: THE BULGE — the long-lived CupArc deformation along a cable; explodes into 5 planes.
+[package]
+name = "fsl-bulge"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+fsl-core = { path = "../fsl-core" }

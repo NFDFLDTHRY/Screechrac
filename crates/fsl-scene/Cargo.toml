@@ -1,0 +1,8 @@
+# SPATIAL ROLE: THE SCENE — projection (sandbox→3D), the bulge explosion lens, deterministic traversal.
+[package]
+name = "fsl-scene"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+fsl-core  = { path = "../fsl-core" }
+fsl-bulge = { path = "../fsl-bulge" }

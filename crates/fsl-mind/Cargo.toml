@@ -1,0 +1,13 @@
+# SPATIAL ROLE: THE ASSEMBLER/WALKER — World: parallel cables/strands, Onion Shell, scene walking.
+[package]
+name = "fsl-mind"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+fsl-core  = { path = "../fsl-core" }
+fsl-flow  = { path = "../fsl-flow" }
+fsl-bulge = { path = "../fsl-bulge" }
+fsl-actor = { path = "../fsl-actor" }
+fsl-cable = { path = "../fsl-cable" }
+fsl-scene = { path = "../fsl-scene" }
+fsl-llm   = { path = "../fsl-llm" }

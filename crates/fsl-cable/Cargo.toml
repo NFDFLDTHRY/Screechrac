@@ -1,0 +1,8 @@
+# SPATIAL ROLE: RADIAL STRANDS — UNK decomposition chain/cable; sub-strands attach radially.
+[package]
+name = "fsl-cable"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+fsl-core = { path = "../fsl-core" }
+fsl-flow = { path = "../fsl-flow" }
