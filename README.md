@@ -1,5 +1,22 @@
 # FSL — Foundational System Loop
 
+## Canonical Reference Documents — the single, immutable source of truth
+
+The entire project is authored against three canonical conceptual documents, held
+**read-only and immutable** under [`references/conceptual/`](./references/conceptual/):
+
+1. **[Human Cognitive Compiler Architecture.txt](./references/conceptual/Human%20Cognitive%20Compiler%20Architecture.txt)** — HCC-A.
+2. **[Where the Water Is Loud.txt](./references/conceptual/Where%20the%20Water%20Is%20Loud.txt)** — the Proof Ledger / Delta-Bridge crossing manual.
+3. **[The Coffee Cup (1).txt](./references/conceptual/The%20Coffee%20Cup%20(1).txt)** — the five-stage deformation arc.
+
+These three files are the **single, immutable source of truth** for all fidelity audits
+and merciless reviews. They are sacred and read-only — never altered, renamed, or
+summarized. Every change to this codebase must be audited against their verbatim
+content. Their byte-for-byte integrity is enforced by the `reference_docs_immutable`
+guardrail in [`src/hologram_compliance.rs`](./src/hologram_compliance.rs).
+
+---
+
 A Rust workspace where the **cable / strand / bulge** spatial methodology is the
 *literal structural organizing principle* of the codebase — not a visualization, not
 comments, not a post-processing layer. Crates, modules, types, and traversal embody it,

@@ -1,0 +1,471 @@
+Spec Name: Human Cognitive Compiler Architecture
+Short Name: HCC-A v1.0
+Author: You (I’m just the drafting tool)
+Primary Use:
+Self-mapping
+Other-mapping
+Interaction forensics
+Narrative & relational modeling
+Sovereign operations
+
+--1. CORE ONTOLOGY
+1.1. Reality
+Reality (R):
+Objective, constraint-bearing environment. Exists independent of any observer.
+Not directly accessible by any mind.
+
+1.2. Interface
+Interface (I):
+Biological and perceptual system (senses, nervous system, body state).
+Converts Reality → raw internal signals.
+
+--2. ARCHITECTURE COMPONENTS
+Every human has these components. Differences are in parameters, not presence.
+2.1. Dual Input Channels
+
+1. RIC – Raw Input Channel
+Input: structured signals from Interface:
+“X said Y”
+“door closed”
+“bank account at $23.14”
+timing, sequence, spatial relations, cause/effect traces
+
+Role: preserve external structure as faithfully as possible.
+
+2. PFC – Pre-Filter Channel
+Input: same signals, but routed through:
+priors
+templates
+roles
+threat models
+cultural narratives
+ideology, religion, fandoms, etc.
+
+Role: apply pre-existing schemas and assign probable interpretations before full compilation.
+
+> Invariant:
+RIC and PFC run in parallel, not serially. Both feed the compiler.
+
+--2.2. Compiler (C)
+Definition: Mechanism that converts structure → story.
+Inputs:
+Structured RIC data
+PFC-shaped interpretations
+
+Outputs:
+Updates to the Story Ledger (L)
+
+--2.3. Story Ledger (L)
+Definition: Internal event log / ledger.
+Properties:
+Contains concrete, abstract, imagined, and inferred events.
+Supports:
+addition (new events)
+merging (grouping)
+re-indexing (changing what belongs with what)
+deletion / suppression (pruning)
+
+Ledger is not narrative form.
+It’s the underlying data the mind uses to later construct narrative.
+
+--2.4. Meaning Engine (M)
+Definition: Weight system + transition logic operating on the ledger.
+Inputs:
+Current Ledger (L)
+Internal value/priorities
+
+Outputs:
+Weights: how important each event/cluster is
+Transitions: what should change in response:
+beliefs
+priorities
+roles
+future expectations
+allowed behaviors
+
+> In your model: Meaning is directive.
+It doesn’t just label; it influences what happens next.
+
+---
+
+2.5. Emotion Engine (E)
+Definition: Meaning-in-flight.
+The runtime state of the system while the Meaning Engine is applying transitions.
+Not:
+meaning itself
+story
+intent
+
+Is:
+the experienced internal turbulence or resonance during change.
+
+Emotions vanish or settle when transitions complete or stall.
+
+> Emotions are not transmissible.
+Only structure is. Others generate their own E from their M + L.
+
+--2.6. Identity Shaping Layer (ISL)
+Definition: Compression/synchronization layer where Story + Meaning + repeated emotional
+patterns integrate into Identity.
+Inputs:
+Ledger state
+Meaning weights and transitions
+Emotional patterns over time
+
+Output:
+Current identity snapshot
+Updated rules/priors for future compilation
+
+> Identity here is not aesthetics or self-descriptions.
+It’s the internal synchronization that determines “what kind of agent am I in this world?”
+
+--2.7. Behavior Output (B)
+Definition: External, observable actions.
+Inputs:
+Identity snapshot (ISL)
+Current Meaning transitions
+Current emotional state
+Active templates and constraints
+
+Output examples:
+words spoken or withheld
+physical actions
+silence / freeze
+jokes, escalation, retreat, attack, fawn, etc.
+
+> Behavior is the only directly observable part of the loop.
+
+--2.8. Feedback
+Behavior alters Reality / environment.
+New events become new structure.
+Loop restarts.
+
+--3. STATE MACHINE FLOW
+Universal loop any mind runs:
+S0 – Intake
+Interface receives signals from Reality.
+RIC gets raw structured events.
+PFC applies priors/templates to the same events.
+
+S1 – Coexistence & Early Pruning
+RIC and PFC both active.
+Early filtering:
+some sensory/noise dropped
+some things tagged as “threat,” “irrelevant,” “opportunity,” etc.
+
+S2 – Compilation (C)
+
+C takes {RIC, PFC} → updates the Story Ledger (L):
+add events
+merge them
+reclassify them
+
+S3 – Meaning (M)
+M evaluates L:
+What matters here?
+How much?
+What must change?
+
+Produces weights + intended transitions.
+
+S4 – Emotion Runtime (E)
+E is the felt “meaning in motion” state.
+stable meaning → calm
+unstable meaning → turbulence
+
+S5 – Identity Update (ISL)
+ISL integrates:
+new ledger shape
+meaning weights
+patterns of emotion
+
+Produces updated:
+> “Who am I now, given this?”
+
+S6 – Behavior (B)
+Action chosen based on:
+Identity
+Meaning
+Emotion
+Active constraints/templates
+
+S7 – Feedback
+Behavior changes outer structure.
+New conditions feed back into S0.
+
+Loop repeats.
+
+--4. PARAMETER SPACE (HOW INDIVIDUALS DIFFER)
+Same machine; different settings. These are the knobs.
+4.1. Template / Schema Library (PFC Content)
+What schemas exist for:
+love, conflict, success, failure, authority, self, others
+
+How strong they are:
+Do they override raw input?
+Do they only suggest probabilities?
+
+--4.2. Priority Stack
+When there’s conflict, what is preserved first?
+Common candidates:
+coherence
+comfort
+belonging
+control
+safety
+novelty
+power
+harmony
+image
+autonomy
+truth
+sovereignty
+status
+
+peace
+
+Priority stack is the internal ordering of these.
+
+--4.3. Pruning Strategy
+Where does most data loss happen?
+Perceptual pruning (S0):
+not noticing
+habituation
+selective attention
+
+Pre-filter pruning (S1):
+PFC discards inputs that don’t fit templates
+“That can’t be what’s happening, so I ignore it.”
+
+Post-compile pruning (S3–S5):
+revise or erase uncomfortable ledger entries
+reframe memory
+down-weight events until irrelevant
+
+--4.4. Arbitration Between RIC and PFC
+
+When raw structure conflicts with template interpretation:
+RIC-dominant:
+“I trust what actually happened even if it breaks my stories.”
+PFC-dominant:
+“I trust my narrative/template even if it breaks the evidence.”
+Coherence-dominant (Compiler):
+tries to integrate both.
+Identity-dominant (ISL):
+reality bends to preserve self-concept.
+
+--4.5. Meaning Engine Style
+How M operates, functionally:
+Descriptive:
+meaning = labels (“this is trauma”, “that’s toxic”)
+Evaluative:
+meaning = value judgments (“good/bad”, “success/failure”)
+Directive:
+meaning = decision logic (“therefore I must / must not do X”)
+
+Most people live in descriptive/evaluative.
+Directive meaning is where sovereignty and consistent agency come from.
+
+--4.6. Emotion Handling Style
+When E spins up:
+Decision-driving:
+emotion → “I must act” (Mode D)
+
+Story-rewriting:
+emotion → “I must change what this means / meant” (Mode C)
+Re-weighting:
+emotion → “I must change how important this is” (Mode B)
+Ignorable:
+emotion is just noise; behavior follows templates.
+
+People are usually mixtures.
+
+--4.7. Identity Mode (ISL Style)
+How Identity is formed and used:
+Coherent: One continuous “self” across contexts.
+Fragmented: Multiple selves; context-dependent.
+Scripted: Identity = role being played.
+Aesthetic: Identity = how one appears / is perceived.
+Sovereign: Identity = anchored in internal constraints and authored meaning.
+
+--5. SIX-ACT STACK ON THIS STAGE
+This is your reusable “play” that any mind runs when processing an event or interaction. Acts
+are process layers, not content.
+STAGE ASSUMPTIONS
+Reality exists and constrains.
+Only structure crosses between minds.
+
+Meaning and story are local.
+RIC + PFC run in parallel.
+The full loop (C, L, M, E, ISL, B) is present.
+
+--ACT I – Scene & Stakes (Intake & Framing)
+Question:
+> “What world am I in right now?”
+
+RIC: captures what actually happened.
+PFC: decides what kind of scene this is:
+argument, test, rejection, game, lesson, betrayal, opportunity, etc.
+
+Output: perceived stakes + perceived roles.
+
+Diagnostic prompts:
+“What kind of scene is this to you?”
+“If this were a movie, what type of scene would this be?”
+
+--ACT II – Story Update (Compilation)
+Question:
+> “What just got added to my story?”
+
+Compiler updates the ledger:
+new event
+merged event
+re-tagged event
+
+PFC may distort or gate raw inputs.
+
+Diagnostic prompts:
+“If you told yourself tonight what happened here, how would you tell it?”
+“What line gets added to your internal ledger from this?”
+
+--ACT III – Meaning & Emotion (Valuation in Flight)
+Question:
+> “What does this mean for me?”
+
+Meaning Engine computes:
+what matters most
+what changes, if anything
+
+Emotion spins up as meaning is applied.
+
+Diagnostic prompts:
+
+“What matters most about this to you?”
+“What part of this hits you hardest?”
+“What would be the worst-case interpretation for you?”
+
+--ACT IV – Identity Integration
+Question:
+> “What does this say about who I am?”
+
+ISL integrates:
+does this confirm or threaten current identity?
+does it force an identity shift?
+
+Identity rules update for the next loop.
+
+Diagnostic prompts:
+“If this kept happening, what kind of person would you think it proved you are?”
+“What does this make you quietly say about yourself?”
+
+--ACT V – Behavior Emission
+Question:
+> “What do I do now?”
+
+Behavior chosen under:
+identity constraints
+meaning weights
+templates
+emotional state
+
+Diagnostic prompts:
+“Given everything you’re feeling and thinking, what feels like the only thing you can do?”
+“What options do you feel are off the table?”
+
+--ACT VI – World Model & Template Update
+Question:
+> “What did this teach me about the world?”
+
+Behavior + consequence feed back:
+did the world confirm expectations?
+did it violate templates?
+
+PFC is updated:
+templates entrenched
+
+templates weakened
+templates split
+
+Diagnostic prompts:
+“What does this convince you people/the world are like?”
+“What rule about life does this reinforce for you?”
+
+--6. SPEC SCHEMA (YAML TEMPLATE)
+For actual use, you can treat this as a per-person or per-event config sheet.
+schema_version: "HCC-A-1.0"
+person_model:
+name: "<identifier>"
+# 1. Template Library (PFC)
+templates:
+romance: "<template description>"
+conflict: "<template description>"
+authority: "<template description>"
+self: "<template description>"
+others: "<template description>"
+# 2. Priority Stack (highest first)
+priority_stack:
+- "<e.g. coherence>"
+- "<e.g. belonging>"
+- "<e.g. comfort>"
+- "<...>"
+# 3. Pruning Strategy
+pruning:
+perceptual_level: "<low|medium|high>"
+prefilter_level: "<low|medium|high>"
+
+postcompile_level: "<low|medium|high>"
+# 4. Arbitration Mode
+arbitration:
+raw_vs_template: "<raw_wins|template_wins|compiler_resolves|identity_wins>"
+identity_vs_reality: "<identity_yields|reality_yields|split>"
+# 5. Meaning Engine Style
+meaning_engine:
+mode: "<descriptive|evaluative|directive>"
+notes: "<how they talk about 'what it means'>"
+# 6. Emotion Handling
+emotion_style:
+dominant_transition: "<reindex|reweight|rewrite|decide|ignore>"
+volatility: "<low|medium|high>"
+# 7. Identity Mode
+identity_mode:
+style: "<coherent|fragmented|scripted|aesthetic|sovereign>"
+notes: "<how stable identity feels across contexts>"
+event_trace:
+event_id: "<unique>"
+description: "<what happened, structurally>"
+act_I_scene:
+scene_type: "<what kind of scene they think it is>"
+stakes: "<what feels at risk>"
+roles: "<assigned roles>"
+act_II_story_update:
+ledger_change: "<how this updates their internal story>"
+act_III_meaning_emotion:
+meaning_focus: "<what they think matters most>"
+emotion_state: "<felt runtime state>"
+act_IV_identity:
+identity_effect: "<what this does to who they think they are>"
+act_V_behavior:
+chosen_action: "<what they did>"
+perceived_forced: "<did it feel like a choice or inevitability?>"
+
+act_VI_world_update:
+world_rule_update: "<what rule about world/people this reinforced or created>"
+You can fill this in for:
+yourself
+a conversation with Mikayla
+your parents in one conflict
+a random commenter online
+
+Same spec, different parameters.
+
+--7. CLOSING
+You wanted a model that:
+assumes objective reality
+respects individual subjective compilation
+forbids meaning transfer
+restricts communication to structure
+and still explains any individual at any moment
+
+This spec does that.
+
+

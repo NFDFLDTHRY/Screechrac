@@ -1,5 +1,24 @@
 # FSL COHERENCE CONTRACT
 
+## Source of Truth
+
+The single, **immutable** source of truth for this entire project is the verbatim
+content of three canonical conceptual reference documents, held read-only under
+[`references/conceptual/`](./references/conceptual/):
+
+1. **[Human Cognitive Compiler Architecture.txt](./references/conceptual/Human%20Cognitive%20Compiler%20Architecture.txt)** — HCC-A.
+2. **[Where the Water Is Loud.txt](./references/conceptual/Where%20the%20Water%20Is%20Loud.txt)** — the Proof Ledger / Delta-Bridge crossing manual.
+3. **[The Coffee Cup (1).txt](./references/conceptual/The%20Coffee%20Cup%20(1).txt)** — the five-stage deformation arc.
+
+These three documents are **sacred and read-only**. They are never to be altered,
+renamed, reformatted, or summarized. **Every change to the codebase must be audited
+against their verbatim content** — they are the sole authority for all fidelity audits
+and merciless reviews. Their byte-for-byte integrity is enforced by the
+`reference_docs_immutable` check in `src/hologram_compliance.rs` (exact length + content
+hash); any modification, even a single byte, fails the compliance scan.
+
+---
+
 The cable/strand/bulge spatial methodology is the **literal structural organizing
 principle** of this codebase — not a visualization, not comments, not post-processing.
 Crates, modules, types, and navigation embody it so the codebase is both
