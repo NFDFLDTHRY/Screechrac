@@ -1,0 +1,7 @@
+# SPATIAL ROLE: FLOW — the sole connective primitive: membrane + crossing bridge + river.
+[package]
+name = "fsl-flow"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+fsl-core = { path = "../fsl-core" }

@@ -1,0 +1,7 @@
+# SPATIAL ROLE: OFF-AXIS ENGINE — the inverted Oracle (rule-based now; swappable for a real model).
+[package]
+name = "fsl-llm"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+fsl-core = { path = "../fsl-core" }

@@ -1,0 +1,5 @@
+# SPATIAL ROLE: THE SPACE — coordinates substrate, seams, Oracle trait, Ledger(truth), Graph(nav), Sandbox.
+[package]
+name = "fsl-core"
+version = "0.1.0"
+edition = "2021"

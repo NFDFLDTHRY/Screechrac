@@ -1,0 +1,24 @@
+# SPATIAL ROLE: workspace root — the full 3D scene graph assembled from spatial-role crates.
+[package]
+name = "fsl"
+version = "0.1.0"
+edition = "2021"
+description = "Foundational System Loop — cable/strand/bulge scene graph over HCC-A, Where the Water Is Loud, and The Coffee Cup."
+
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[dependencies]
+fsl-core  = { path = "crates/fsl-core" }   # THE SPACE
+fsl-flow  = { path = "crates/fsl-flow" }   # FLOWS (membrane + bridge + river)
+fsl-bulge = { path = "crates/fsl-bulge" }  # THE BULGE (CupArc)
+fsl-actor = { path = "crates/fsl-actor" }  # ACTOR STRANDS (HCC-A)
+fsl-cable = { path = "crates/fsl-cable" }  # RADIAL STRANDS (UNK chain)
+fsl-scene = { path = "crates/fsl-scene" }  # THE SCENE (projection/explosion/traversal)
+fsl-llm   = { path = "crates/fsl-llm" }    # OFF-AXIS ENGINE (inverted Oracle)
+fsl-mind  = { path = "crates/fsl-mind" }   # THE ASSEMBLER/WALKER
+
+[[bin]]
+name = "fsl"
+path = "src/main.rs"
