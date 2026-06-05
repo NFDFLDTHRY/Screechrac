@@ -15,19 +15,32 @@ summarized. Every change to this codebase must be audited against their verbatim
 content. Their byte-for-byte integrity is enforced by the `reference_docs_immutable`
 guardrail in [`src/hologram_compliance.rs`](./src/hologram_compliance.rs).
 
-## Facilitator — the first real-world application of FSL
+## Facilitator — the first *functional* application of FSL
 
 **[Facilitator](./references/facilitator/FACILITATOR_Project_Manifest_v1.1.md)** is the
 first real-world application built on top of the FSL cognitive engine: a **driver-first
 local problem-solving marketplace** — *"You have a problem. We fix it."* It ships as the
-single installable PWA under [`web/`](./web) (Leptos SSR + Axum) and serves two roles —
-**customers** who post free-form/voice jobs and **drivers** who accept them — plus the
-platform **Engine** view that walks the FSL scene graph.
+single installable PWA under [`web/`](./web) (Leptos SSR + Axum) and serves
+**customers** (post free-form/voice jobs), **drivers** (accept and complete jobs), and a
+platform **Engine** view.
 
-Facilitator is a **thin presentation + job-routing layer only**: every posted job is a
-root node (a *cable*) routed through the existing FSL harness, and **no FSL core crate is
-changed**. See the manifest and `web/src/main.rs` for the mapping onto the
-cable/strand/bulge methodology. Deploy the whole thing with [`setup.sh`](./setup.sh).
+It is now **functionally real, powered end-to-end by FSL** (the web layer stays thin —
+all intelligence lives in FSL):
+
+- The custom **fsl-llm engine** ([`crates/fsl-llm/src/facilitator.rs`](./crates/fsl-llm/src/facilitator.rs))
+  turns a free-form request into a structured job through the **inverted Oracle** — it
+  classifies intent into presets and, for every missing variable, calls the Oracle to
+  mint an **UNK** (a Listener question). It holds no state.
+- Each posted job is a **cable** (root node) ingested into a persistent FSL `World`;
+  missing slots become **strands** (UNKs); **The Listener** answers resolve them across
+  ticks via the **Onion Shell**; the **Coffee Cup** arc advances each pass; and once
+  every slot is anchored the free-form request **standardizes into a one-tap preset**.
+- **Customer Mode** escalation routes through the FSL cognitive system; the **driver
+  dashboard** shows live shadow-intelligence hints pulled from FSL state.
+
+**No FSL core crate is changed** except the explicitly-commissioned `fsl-llm` engine;
+the scene graph, the Coherence Contract, and the three conceptual references remain
+immutable. Deploy the whole thing with [`setup.sh`](./setup.sh).
 
 ---
 

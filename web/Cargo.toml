@@ -17,5 +17,13 @@ leptos = { version = "0.6", features = ["ssr"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# The FSL cognitive engine, used as a LIBRARY (all intelligence stays in FSL; the web
+# layer only orchestrates and presents). Path deps reach the unchanged core crates.
+fsl-core  = { path = "../crates/fsl-core" }
+fsl-actor = { path = "../crates/fsl-actor" }
+fsl-mind  = { path = "../crates/fsl-mind" }
+fsl-scene = { path = "../crates/fsl-scene" }
+fsl-llm   = { path = "../crates/fsl-llm" }
+
 [profile.release]
 opt-level = 2

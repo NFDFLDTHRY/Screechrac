@@ -17,22 +17,28 @@ and merciless reviews. Their byte-for-byte integrity is enforced by the
 `reference_docs_immutable` check in `src/hologram_compliance.rs` (exact length + content
 hash); any modification, even a single byte, fails the compliance scan.
 
-## First real-world application: Facilitator
+## First *functional* application: Facilitator
 
 **Facilitator** (the driver-first local problem-solving marketplace —
 [`references/facilitator/FACILITATOR_Project_Manifest_v1.1.md`](./references/facilitator/FACILITATOR_Project_Manifest_v1.1.md))
-is the first application built on top of FSL. It is bound by this contract as a strict
-**presentation + job-routing layer**, and the mapping is exact:
+is the first application built on top of FSL, and it is now **functionally real, powered
+end-to-end by the FSL cognitive engine**. It is bound by this contract, and the mapping
+is exact and *live*:
 
-- A posted **job** is a **root node** — a *cable*, the primary carrier axis.
-- Clarifications / observations / unknowns a job accrues are **strands** (radial by
-  degree-of-separation).
-- The Listener / Customer-Mode escalation is a **flow** — the sole connective primitive.
+- A posted **job** is a **root node** — a *cable* ingested into the persistent FSL `World`.
+- Each required variable is a **strand**: anchored → an OBS; missing → an UNK that **The
+  Listener** asks about, resolved across ticks by the **Onion Shell**.
+- The **Coffee Cup** arc advances on every job pass; once all UNKs resolve, the
+  free-form request crosses its **Delta Bridge** and standardizes into a **preset**.
+- The Listener / Customer-Mode escalation is a **flow** — the sole connective primitive —
+  and runs through the FSL cognitive system.
 - The FSL **Ledger stays the source of truth**; Facilitator only navigates and presents it.
 
-The application lives entirely in the detached [`web/`](./web) crate (its own
-`[workspace]`). **No FSL core crate, the scene graph, this contract, or the three
-conceptual references may be changed by it** — those remain immutable.
+The custom rule-based engine lives in `fsl-llm` (the commissioned Oracle work); the
+application/presentation lives in the detached [`web/`](./web) crate (its own
+`[workspace]`), which consumes the FSL crates **as a library**. **No FSL core crate other
+than `fsl-llm`, the scene graph, this contract, or the three conceptual references may be
+changed** — those remain immutable, and `reference_docs_immutable` still passes.
 
 ---
 
