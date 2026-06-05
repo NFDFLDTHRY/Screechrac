@@ -7,6 +7,11 @@ Cargo.lock.orig
 # generated PWA icons (produced by setup.sh via imagemagick)
 /web/static/icons/
 
+# durable SQLite data (runtime; lives under /opt/fsl/data in production)
+*.db
+*.db-wal
+*.db-shm
+
 # editor / OS noise
 .DS_Store
 *.swp

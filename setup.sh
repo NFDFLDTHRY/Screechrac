@@ -365,27 +365,50 @@ WEB_BIN="$WEB_DIR/target/release/fsl-web"
 [ -x "$WEB_BIN" ] || die "web binary not found at $WEB_BIN"
 log "web platform built: $WEB_BIN"
 
-# ═════════════════════════════ 5) systemd service ═════════════════════════════
+# ═════════════════════════════ 5) durable data dir + secret ═════════════════════════════
+# SQLite is the durable truth (jobs/accounts); the FSL World is rebuilt from it on boot.
+FSL_DATA="$FSL_HOME/data"
+FSL_DB="$FSL_DATA/facilitator.db"
+SECRET_FILE="$FSL_DATA/secret"
+ENV_FILE="$FSL_DATA/fsl.env"
+mkdir -p "$FSL_DATA"
+# Generate the cookie-signing secret ONCE and reuse it (so sessions survive restarts).
+if [ ! -s "$SECRET_FILE" ]; then
+  head -c 48 /dev/urandom | base64 | tr -d '\n' > "$SECRET_FILE"
+  chmod 600 "$SECRET_FILE"
+  log "generated a persistent FSL_SECRET"
+fi
+# EnvironmentFile keeps the secret out of the world-readable unit file.
+umask 177
+cat > "$ENV_FILE" <<ENV_EOF
+FSL_BIN=$FSL_BIN
+FSL_WEB_DIR=$WEB_DIR
+FSL_BIND=$FSL_BIND
+FSL_PORT=$FSL_PORT
+FSL_DB=$FSL_DB
+FSL_SECRET=$(cat "$SECRET_FILE")
+ENV_EOF
+umask 022
+
+# ═════════════════════════════ 6) systemd service ═════════════════════════════
 log "installing systemd service fsl.service (port $FSL_PORT)…"
 cat > /etc/systemd/system/fsl.service <<UNIT_EOF
 [Unit]
-Description=FSL — Foundational System Loop (Leptos/Axum PWA server)
+Description=FSL — Facilitator (durable Leptos/Axum PWA + live FSL engine)
 Documentation=https://github.com/NFDFLDTHRY/Screechrac
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-Environment=FSL_BIN=$FSL_BIN
-Environment=FSL_WEB_DIR=$WEB_DIR
-Environment=FSL_BIND=$FSL_BIND
-Environment=FSL_PORT=$FSL_PORT
+EnvironmentFile=$ENV_FILE
 WorkingDirectory=$WEB_DIR
 ExecStart=$WEB_BIN
 Restart=always
 RestartSec=2
 NoNewPrivileges=true
 ProtectSystem=full
+ReadWritePaths=$FSL_DATA
 ProtectHome=read-only
 
 [Install]
@@ -398,7 +421,7 @@ systemctl restart fsl.service
 sleep 2
 systemctl is-active --quiet fsl.service && log "fsl.service is active" || warn "fsl.service did not become active — check: journalctl -u fsl -e"
 
-# ═════════════════════════════ 6) Caddy reverse proxy (best effort) ═════════════════════════════
+# ═════════════════════════════ 7) Caddy reverse proxy (best effort) ═════════════════════════════
 # Run in a failure-tolerant function: a Caddy hiccup must never fail the whole deploy.
 setup_caddy() {
   if ! command -v caddy >/dev/null 2>&1; then

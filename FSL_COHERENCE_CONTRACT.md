@@ -36,9 +36,20 @@ is exact and *live*:
 
 The custom rule-based engine lives in `fsl-llm` (the commissioned Oracle work); the
 application/presentation lives in the detached [`web/`](./web) crate (its own
-`[workspace]`), which consumes the FSL crates **as a library**. **No FSL core crate other
-than `fsl-llm`, the scene graph, this contract, or the three conceptual references may be
-changed** — those remain immutable, and `reference_docs_immutable` still passes.
+`[workspace]`), which consumes the FSL crates **as a library**. **No FSL core crate, the
+scene graph, this contract, or the three conceptual references may be changed** — those
+remain immutable, and `reference_docs_immutable` still passes.
+
+**Durability mirrors the contract at the app layer.** Facilitator is durable and
+authenticated on a single node: an embedded **SQLite** database is the application's
+*truth* (accounts, jobs, clarifications, preset stats), and the in-memory FSL `World` is a
+**projection rebuilt by replaying stored jobs on boot** — the same "truth vs. navigation"
+discipline this contract demands of the Ledger and the Graph. Persistence and
+**lightweight auth** (argon2 + signed HTTP-only session cookie + role identity) are
+*infrastructure, not cognition*: no intelligence leaves FSL. A clean `PaymentProvider`
+seam awaits the later GoDaddy hookup. Single-node is the present boundary; horizontal
+scaling and the remaining vision (Hive Calls, Guardian Mode, full QR) are explicitly
+future work, never faked.
 
 ---
 

@@ -1,10 +1,16 @@
 # SPATIAL ROLE: the build/test gate — machine-buildable proof that the scene graph holds.
+# Self-contained: uses ONLY the GitHub-owned actions/checkout plus the runner's
+# pre-installed Rust toolchain (no third-party actions), so it runs under the strictest
+# repository Actions policies.
 name: CI
 
 on:
   push:
     branches: [main, "claude/**"]
   pull_request:
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,11 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo artifacts
-        uses: Swatinem/rust-cache@v2
+      - name: Show toolchain (pre-installed on ubuntu-latest)
+        run: |
+          rustup default stable
+          rustc --version
+          cargo --version
 
       - name: cargo check (workspace, all targets)
         run: cargo check --workspace --all-targets
@@ -31,3 +37,10 @@ jobs:
 
       - name: Walk the scene + run the hologram compliance scanner
         run: cargo run --quiet
+
+      # The Facilitator web crate is a detached [workspace], so the root --workspace run
+      # above does NOT build or test it. Build and test it explicitly.
+      - name: cargo check + test (web crate)
+        run: |
+          cargo check --manifest-path web/Cargo.toml --all-targets
+          cargo test --manifest-path web/Cargo.toml
