@@ -135,6 +135,16 @@ impl SceneGraph {
 
     /// Attach a STRAND radially. radius = RADIAL_BASE*(1+degree), so radial distance IS
     /// the degree-of-separation from the root cable; angle spreads deterministically.
+    ///
+    /// ```
+    /// use fsl_scene::{SceneGraph, StrandKind, RADIAL_BASE};
+    /// use fsl_core::{RootId, Seq};
+    /// let mut sg = SceneGraph::default();
+    /// sg.place_cable(RootId(0));
+    /// let id = sg.attach_strand(RootId(0), StrandKind::Obs, 2, Seq(0));
+    /// let s = sg.strand(id).unwrap();
+    /// assert!((s.radius - RADIAL_BASE * 3.0).abs() < 1e-6); // radius == RADIAL_BASE*(1+degree)
+    /// ```
     pub fn attach_strand(&mut self, cable: RootId, kind: StrandKind, degree: u32, seq: Seq) -> StrandId {
         let ord = self.strand_ordinal(cable);
         let id = StrandId(self.next_strand); self.next_strand += 1;

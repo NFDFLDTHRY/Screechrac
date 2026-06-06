@@ -196,6 +196,25 @@ pub struct TickReport {
 }
 
 impl World {
+    /// Open a fresh `World` — the self-referential sandbox that ingests root nodes
+    /// (cables) and runs the full membrane → bridge → Coffee-Cup → HCC-A loop.
+    ///
+    /// ```
+    /// use fsl_mind::World;
+    /// use fsl_core::{InvalidPolicy, UnkPolicy};
+    /// use fsl_actor::Params;
+    /// use fsl_llm::DeterministicOracle;
+    /// let oracle = DeterministicOracle::default();
+    /// let mut world = World::new(InvalidPolicy::default(),
+    ///     UnkPolicy::BoundedBudget { max_open_unk: 3, max_strand_depth: 2 });
+    /// let a = world.spawn(None, Params::default(), vec![]);
+    /// let b = world.spawn(None, Params::default(), vec![]);
+    /// let x = world.open_pair(1, a, b, false);
+    /// world.set_default_pair(x, a, b);
+    /// let root = world.ingest_input("the deadline slipped"); // a CABLE
+    /// let _trace = world.primary_loop(&oracle, root, vec![], false);
+    /// assert!(world.sandbox.ledger.len() >= 1); // the Ledger is the append-only truth
+    /// ```
     pub fn new(policy: InvalidPolicy, unk_policy: UnkPolicy) -> Self {
         World { minds: HashMap::new(), membrane: ProofMembrane::new(), pairs: HashMap::new(),
                 cable: Cable_::default(), policy, unk_policy,

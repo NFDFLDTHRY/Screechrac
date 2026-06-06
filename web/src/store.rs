@@ -53,6 +53,15 @@ pub struct ReplayJob {
 }
 
 impl Store {
+    /// Open (and migrate) the durable SQLite store — the application's source of truth.
+    ///
+    /// ```
+    /// use fsl_web::store::Store;
+    /// let path = std::env::temp_dir().join(format!("fsl-doctest-{}.db", std::process::id()));
+    /// let store = Store::open(path.to_str().unwrap()).unwrap();
+    /// assert_eq!(store.count_jobs().unwrap(), 0);
+    /// let _ = std::fs::remove_file(&path);
+    /// ```
     pub fn open(path: &str) -> R<Store> {
         let manager = SqliteConnectionManager::file(path);
         let pool = Pool::builder().max_size(8).build(manager).map_err(e)?;

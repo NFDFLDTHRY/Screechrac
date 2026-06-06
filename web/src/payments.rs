@@ -44,6 +44,14 @@ pub trait PaymentProvider: Send + Sync {
 }
 
 /// The default in this PR: present and wired at the job-completion seam, but inert.
+///
+/// ```
+/// use fsl_web::payments::{PaymentProvider, NoopProvider, Charge, Settlement};
+/// let provider = NoopProvider;
+/// let charge = Charge { job_id: 1, customer_id: 1, driver_id: 2, amount_cents: 0, memo: "x".into() };
+/// // the seam is present but inert — no fake charge is performed
+/// assert!(matches!(provider.settle(&charge), Settlement::Unconfigured));
+/// ```
 #[derive(Debug, Default, Clone)]
 pub struct NoopProvider;
 impl PaymentProvider for NoopProvider {

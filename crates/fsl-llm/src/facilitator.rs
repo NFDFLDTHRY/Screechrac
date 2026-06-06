@@ -69,6 +69,12 @@ impl Preset {
 }
 
 /// Structural intent classification — token/substring membership only (NO regex).
+///
+/// ```
+/// use fsl_llm::facilitator::{classify, Preset};
+/// assert_eq!(classify("my car has a flat tire on the highway"), Preset::Roadside);
+/// assert_eq!(classify("deliver food from the diner to my office"), Preset::Delivery);
+/// ```
 pub fn classify(text: &str) -> Preset {
     let t = text.to_lowercase();
     let any = |ks: &[&str]| ks.iter().any(|k| t.contains(k));
@@ -161,6 +167,12 @@ impl JobProposal {
 
 /// Stable topic id for a slot, so a missing-slot UNK and the later answering OBS pair up
 /// across ticks (Onion Shell resolution). FNV-1a — deterministic, no external crate.
+///
+/// ```
+/// use fsl_llm::facilitator::slot_topic;
+/// assert_eq!(slot_topic("pickup"), slot_topic("pickup")); // stable
+/// assert_ne!(slot_topic("pickup"), slot_topic("dropoff")); // distinct per slot
+/// ```
 pub fn slot_topic(slot: &str) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in slot.as_bytes() { h ^= *b as u64; h = h.wrapping_mul(0x0000_0100_0000_01b3); }
@@ -178,6 +190,15 @@ fn make_title(p: Preset, text: &str) -> String {
 /// assembles a FRESH `UnkContext` and calls `oracle.unknowns(..)` (inverted interface),
 /// and it routes the request through `oracle.route(..)` for I-A1 pointability — so the
 /// rule-based cognition runs *through* the Oracle, not around it. No state is retained.
+///
+/// ```
+/// use fsl_llm::DeterministicOracle;
+/// use fsl_llm::facilitator::structure_job;
+/// let oracle = DeterministicOracle::default();
+/// // a vague request leaves variables undefined → The Listener must raise clarifying UNKs
+/// let p = structure_job(&oracle, "I need a couch moved");
+/// assert!(!p.missing.is_empty());
+/// ```
 pub fn structure_job(oracle: &dyn Oracle, text: &str) -> JobProposal {
     let preset = classify(text);
     let toks = tokenize(text);

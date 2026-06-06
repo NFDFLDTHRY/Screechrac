@@ -78,6 +78,17 @@ fn env_i64(k: &str, default: i64) -> i64 {
 }
 
 /// Build the full application (router + state). Exposed so integration tests can drive it.
+///
+/// On build it rebuilds the in-memory FSL `World` by replaying stored jobs (deterministic),
+/// so the projection survives restarts. The returned `Router` is served with `axum::serve`.
+///
+/// ```no_run
+/// use fsl_web::{build_app, store::Store};
+/// let store = Store::open("facilitator.db").unwrap();
+/// let (app, _state) = build_app(store, ".", Some("a-stable-signing-secret"));
+/// // axum::serve(listener, app).await — see `main.rs`
+/// let _ = app;
+/// ```
 pub fn build_app(store: Store, web_dir: &str, secret: Option<&str>) -> (Router, AppState) {
     let cfg = Config {
         promote_threshold: env_i64("FSL_PRESET_PROMOTE", 3),

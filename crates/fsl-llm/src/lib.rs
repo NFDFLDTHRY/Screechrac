@@ -18,6 +18,21 @@ pub mod facilitator;
 
 /// The deterministic engine. Holds no conversation state (only inert config), which
 /// is what keeps the system deterministic: identical context ⇒ identical output.
+///
+/// The inverted interface in practice — a *function* assembles a fresh context and CALLS
+/// the Oracle, which returns only element arrays and holds no state:
+///
+/// ```
+/// use fsl_llm::DeterministicOracle;
+/// use fsl_core::{Oracle, RoutingContext, RootCtx, InvalidPolicy, Claim, Span};
+/// let oracle = DeterministicOracle::default();
+/// let claims = vec![Claim::pointable(1, "shipped Friday",
+///     Span { quote: "Friday".into(), context: "c".into() }, 7, 1)];
+/// let policy = InvalidPolicy::default();
+/// let ctx = RoutingContext { claims: &claims, invalid_policy: &policy, invalid_pressure: 0.0, root: RootCtx::default() };
+/// // identical fresh context ⇒ identical output (statelessness)
+/// assert_eq!(oracle.route(&ctx).len(), oracle.route(&ctx).len());
+/// ```
 #[derive(Clone, Debug, Default)]
 pub struct DeterministicOracle;
 
