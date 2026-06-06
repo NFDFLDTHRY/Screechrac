@@ -29,6 +29,16 @@ pub struct Cable { pub links: Vec<Link>, next_strand: u64, next_node: u64 }
 
 impl Cable {
     /// "each tick is a root node": open (or reuse) this tick's root link.
+    ///
+    /// ```
+    /// use fsl_cable::Cable;
+    /// use fsl_core::TickId;
+    /// let mut cable = Cable::default();
+    /// let n1 = cable.root(TickId(1));
+    /// let n1_again = cable.root(TickId(1)); // same tick reuses the link
+    /// assert_eq!(n1.0, n1_again.0);
+    /// assert_eq!(cable.strand_count(), 0);
+    /// ```
     pub fn root(&mut self, tick: TickId) -> NodeId {
         if let Some(l) = self.links.iter().find(|l| l.tick == tick) { return l.node; }
         let node = NodeId(self.next_node); self.next_node += 1;

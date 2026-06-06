@@ -71,13 +71,20 @@ human-walkable and machine-navigable exactly like the 3D scene graph.
 | **Mind**  | Only the assembler/walker that drives the loop and walks the scene.                                 | `fsl-mind` |
 | **LLM**   | The inverted Oracle: functions CALL it; it returns only element arrays; fresh context every call.   | `fsl-llm` |
 
-## Testing — local only (Rust's native test system)
+## Testing & documentation — local only (Rust's native tooling)
 This project is **self-contained**: there is **no GitHub Actions / CI infrastructure**.
-All verification is performed locally with Rust's native test runner —
-`cargo test --workspace` (the FSL core crates) and
-`cargo test --manifest-path web/Cargo.toml` (the Facilitator web crate), with the
-end-to-end walk via `cargo run`. The compliance checklist below is enforced through these
-`cargo test` runs and the runtime scan in `hologram_compliance.rs`, on the engineer's machine.
+All testing, quality checks, and documentation use **only Rust's native tools**, run
+locally — and only these four:
+- `cargo test --workspace` — the FSL core crates' tests **and doctests**.
+- `cargo test --manifest-path web/Cargo.toml` — the Facilitator web crate's tests and doctests.
+- `cargo check --workspace --all-targets` — fast type/lint pass.
+- `cargo doc --workspace --no-deps --open` — rustdoc for every public API.
+
+Public entrypoints carry rustdoc with **runnable doctests** (executed by `cargo test`),
+so documentation is verified rather than aspirational. The compliance checklist below is
+additionally enforced through these `cargo test` runs and the runtime scan in
+`hologram_compliance.rs`, on the engineer's machine. Doc edits never change FSL logic, and
+the three conceptual references stay byte-for-byte immutable.
 
 ## Compliance checklist (enforced by `hologram_compliance.rs`)
 - [ ] FLOW is the sole connective primitive — every Graph relationship becomes a `Flow`; no other connection type exists.

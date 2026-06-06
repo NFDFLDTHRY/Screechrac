@@ -32,6 +32,16 @@ impl BridgeState {
     /// THE TRANSITION FUNCTION. Drives banks → rapids → delta → crossing → rebuild
     /// from the `BridgeSignal`s that F1–F5 / the membrane emit. This is what makes
     /// the bridge a state MACHINE and lets directives ever become legitimate.
+    ///
+    /// ```
+    /// use fsl_flow::bridge::BridgeState;
+    /// use fsl_core::BridgeSignal;
+    /// let s = BridgeState::S0Banks.step(BridgeSignal::AnchorPresented);
+    /// assert_eq!(s, BridgeState::S2Delta);
+    /// // directives are legitimate ONLY at the crossing / bank-rebuild
+    /// assert!(!BridgeState::S0Banks.directives_legitimate());
+    /// assert!(BridgeState::S3Crossing.directives_legitimate());
+    /// ```
     pub fn step(self, sig: BridgeSignal) -> BridgeState {
         use BridgeState::*;
         use BridgeSignal::*;

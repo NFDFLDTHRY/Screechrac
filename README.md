@@ -88,21 +88,24 @@ non-negotiable 1:1 mapping that every crate, type, and file obeys.
 | `fsl-mind`  | THE ASSEMBLER | the `World`: parallel cables/strands, Onion Shell, the walker |
 | `fsl` (bin) | THE WALK      | the end-to-end scene tour + the hologram compliance scan |
 
-## Testing — local only (Rust's native test system)
+## Testing & docs — local only (Rust's native tooling)
 
-This project uses **only Rust's native test runner** — there is **no GitHub Actions / CI**.
-Run the full test suite locally before pushing:
+This project is **self-contained**: there is **no GitHub Actions / CI**. All testing,
+quality checks, and documentation use **only Rust's native tools**, run locally:
 
 ```sh
-cargo test --workspace                       # all FSL core crates (bridge / cup / scene / pipeline / source)
-cargo test --manifest-path web/Cargo.toml    # the Facilitator web crate (detached workspace)
-cargo run --quiet                            # walk the 3D scene graph + hologram-compliance scan
+cargo test --workspace                       # FSL core crates + unit/integration tests + doctests
+cargo test --manifest-path web/Cargo.toml    # the Facilitator web crate (detached workspace) + doctests
 cargo check --workspace --all-targets        # fast type/lint pass
+cargo doc --workspace --no-deps --open       # build & open the rustdoc for every public API
 ```
 
-The contract guardrails are enforced by these tests plus the runtime scan in
+Every public entrypoint carries rustdoc with **runnable doctests** (executed by
+`cargo test`), so the docs are verified, not aspirational. The contract guardrails are
+additionally enforced by the runtime scan in
 [`src/hologram_compliance.rs`](./src/hologram_compliance.rs) and the source-level checks in
-`crates/fsl-mind/tests/hologram_source.rs` — all run via `cargo test`, on your machine.
+`crates/fsl-mind/tests/hologram_source.rs` — all via `cargo test`, on your machine.
+`setup.sh` also builds the docs (`cargo doc --workspace --no-deps`) as part of deployment.
 
 ## Invariants the build enforces
 

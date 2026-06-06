@@ -288,6 +288,20 @@ pub struct CupArc {
     pub recirculated: u32,
 }
 impl CupArc {
+    /// Open a fresh Coffee Cup arc for a crossing. The five edges that drive it are
+    /// pairwise DISTINCT (never one generic arrow):
+    ///
+    /// ```
+    /// use fsl_bulge::{CupArc, CupEdge, ConditionsMakeLikelyRelease, ReleaseCommitsTrajectory,
+    ///     TrajectoryShapesImpact, ImpactFeedsNarrative, NarrativeRewritesConditions};
+    /// use fsl_core::CrossingId;
+    /// let arc = CupArc::new(CrossingId(1), false);
+    /// assert_eq!(arc.recirculated, 0);
+    /// let verbs = [ConditionsMakeLikelyRelease.verb(), ReleaseCommitsTrajectory.verb(),
+    ///     TrajectoryShapesImpact.verb(), ImpactFeedsNarrative.verb(), NarrativeRewritesConditions.verb()];
+    /// let mut v = verbs.to_vec(); v.sort(); v.dedup();
+    /// assert_eq!(v.len(), 5);
+    /// ```
     pub fn new(interaction: CrossingId, stakes_present: bool) -> Self {
         CupArc {
             interaction, phase: CupStage::Conditions, framing: Framing { stakes_present },

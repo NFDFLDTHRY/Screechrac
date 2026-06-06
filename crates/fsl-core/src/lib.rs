@@ -68,6 +68,16 @@ impl Claim {
     pub fn plain(id: u64, text: &str) -> Self {
         Claim { id: ClaimId(id), text: text.into(), pointer: None, topic: None, stance: None }
     }
+    /// Build a pointable claim — an OBS-eligible claim (I-A1: "something that can be
+    /// pointed at"). `plain` builds a non-pointable claim that can only become an UNK.
+    ///
+    /// ```
+    /// use fsl_core::{Claim, Span};
+    /// let obs = Claim::pointable(1, "shipped Friday",
+    ///     Span { quote: "Friday".into(), context: "thread".into() }, 7, 1);
+    /// assert!(obs.is_pointable());
+    /// assert!(!Claim::plain(2, "something feels off").is_pointable());
+    /// ```
     pub fn pointable(id: u64, text: &str, p: impl Pointer + 'static, topic: u64, stance: i8) -> Self {
         Claim { id: ClaimId(id), text: text.into(), pointer: Some(Box::new(p)),
                 topic: Some(TopicId(topic)), stance: Some(stance) }
@@ -136,6 +146,11 @@ impl InvalidPolicy {
     }
 }
 /// Whitespace split + per-token punctuation strip + lowercase. No regex.
+///
+/// ```
+/// use fsl_core::tokenize;
+/// assert_eq!(tokenize("The deadline, was Friday!"), vec!["the", "deadline", "was", "friday"]);
+/// ```
 pub fn tokenize(s: &str) -> Vec<String> {
     s.split_whitespace()
         .map(|w| w.chars().filter(|c| c.is_alphanumeric() || *c == '\'').collect::<String>().to_lowercase())
@@ -164,6 +179,16 @@ pub enum UnkPolicy {
 /// higher `invalid_pressure` pushes a non-pointable claim toward INVALID
 /// ("you would stop looking at structure and start arguing about stakes") rather
 /// than hard-rejecting anything.
+///
+/// ```
+/// use fsl_core::{Claim, Span, InvalidPolicy, ProofRouting, structural_route};
+/// let policy = InvalidPolicy::default();
+/// // pointable claim → routed to OBS (I-A1 satisfied)
+/// let obs = Claim::pointable(1, "x", Span { quote: "x".into(), context: "c".into() }, 1, 1);
+/// assert_eq!(structural_route(&obs, &policy, 0.0), ProofRouting::Obs);
+/// // non-pointable under low framing pressure → UNK (degrade, not gate)
+/// assert_eq!(structural_route(&Claim::plain(2, "feels off"), &policy, 0.0), ProofRouting::Unk);
+/// ```
 pub fn structural_route(claim: &Claim, policy: &InvalidPolicy, invalid_pressure: f32) -> ProofRouting {
     if policy.flags(&claim.text) {
         return ProofRouting::Invalid;

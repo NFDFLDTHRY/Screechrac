@@ -365,6 +365,17 @@ WEB_BIN="$WEB_DIR/target/release/fsl-web"
 [ -x "$WEB_BIN" ] || die "web binary not found at $WEB_BIN"
 log "web platform built: $WEB_BIN"
 
+# ── documentation: build rustdoc as part of the standard workflow (headless, non-fatal) ──
+# Native Rust tooling only — no GitHub Actions anywhere. Docs are generated, never --open
+# on a headless host. A doc hiccup must never fail the deploy.
+log "building rustdoc (cargo doc --workspace --no-deps)…"
+if (cd "$FSL_HOME" && cargo doc --workspace --no-deps) \
+   && (cd "$WEB_DIR" && cargo doc --no-deps); then
+  log "docs built: $FSL_HOME/target/doc and $WEB_DIR/target/doc (open index.html locally)"
+else
+  warn "cargo doc step failed (non-fatal) — the service still runs"
+fi
+
 # ═════════════════════════════ 5) durable data dir + secret ═════════════════════════════
 # SQLite is the durable truth (jobs/accounts); the FSL World is rebuilt from it on boot.
 FSL_DATA="$FSL_HOME/data"

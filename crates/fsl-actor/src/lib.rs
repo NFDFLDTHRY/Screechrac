@@ -350,6 +350,14 @@ impl TemplateLibrary {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Priority { Coherence, Comfort, Belonging, Control, Safety, Novelty, Power, Harmony, Image, Autonomy, Truth, Sovereignty, Status, Peace }
 impl Priority {
+    /// Names and parses the 4.2 priority-stack entries (round-trips with `from_name`).
+    ///
+    /// ```
+    /// use fsl_actor::Priority;
+    /// assert_eq!(Priority::Coherence.name(), "coherence");
+    /// assert_eq!(Priority::from_name("truth"), Some(Priority::Truth));
+    /// assert_eq!(Priority::from_name("not-a-priority"), None);
+    /// ```
     pub fn name(self) -> &'static str {
         match self {
             Priority::Coherence => "coherence", Priority::Comfort => "comfort", Priority::Belonging => "belonging",
