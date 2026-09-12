@@ -1,0 +1,26 @@
+t}\n${attempt?.summary||''}`,kind);
+  state.currentTerminal=terminalVerdict(verdict);
+  $('continueBtn').disabled=!state.currentTerminal;
+  $('repeatBtn').disabled=false;
+  renderRaw();
+}
+
+async function getCamera(){
+  if(state.stream && state.track?.readyState==='live') return {stream:state.stream,track:state.track};
+  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  const track=stream.getVideoTracks()[0]; state.stream=stream; state.track=track; video.srcObject=stream; video.style.display='block'; await video.play();
+  return {stream,track};
+}
+async function waitVideoReady(){if(video.readyState>=2 && video.videoWidth)return;await new Promise((res,rej)=>{const to=setTimeout(()=>rej(new Error('video metadata timeout')),5000);video.addEventListener('loadedmetadata',()=>{clearTimeout(to);res();},{once:true});});}
+
+async function twoPhaseGenericSensor(CtorName, actionText, axes, options={frequency:60}, responseCheck=null){
+  const raw={surface:globalSurface(CtorName),constructorShape:null,baseline:[],active:[],errors:[]};
+  const norm={exists:raw.surface.exists,constructs:false,starts:false,emits:false,responds:false,verdict:'ABSENT'};
+  if(!raw.surface.exists) return {raw,normalized:norm,summary:`${CtorName} is not exposed on globalThis.`};
+  let sensor; try{sensor=new globalThis[CtorName](options);norm.constructs=true;raw.constructorShape=objectShape(sensor);}catch(e){raw.errors.push(compactError(e));norm.verdict=e?.name==='SecurityError'?'BLOCKED':'EXPOSED';return {raw,normalized:norm,summary:`Constructor failed: ${e?.name}: ${e?.message}`};}
+  const bucket=[]; let err=null;
+  const onRead=()=>{const s={pageTimeMs:+perf().toFixed(3),sensorTimestamp:sensor.timestamp??null};for(const a of axes){const v=sensor[a];s[a]=ArrayBuffer.isView(v)?Array.from(v):(Array.isArray(v)?v.slice():(Number.isFinite(v)?v:(v??null)));}bucket.push(s);};
+  const onError=e=>{err=compactError(e?.error||e);};sensor.addEventListener('reading',onRead);sensor.addEventListener('error',onError);
+  try{sensor.start();norm.starts=true;}catch(e){raw.errors.push(compactError(e));norm.verdict=e?.name==='SecurityError'?'BLOCKED':'CONSTRUCTED';return {raw,normalized:norm,summary:`start() failed: ${e?.name}: ${e?.message}`};}
+  registerCleanup(()=>{try{sensor.stop()}catch{}});
+  setPhase('HOLD STILL','Collecting a 2 second baseline.'); 
