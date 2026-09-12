@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>StrawDummy Camera Probe</title>
+<style>
+:root{color-scheme:dark;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}*{box-sizing:border-box}body{margin:0;background:#090c0f;color:#edf2f7}main{max-width:760px;margin:auto;padding:16px;display:grid;gap:12px}.card{border:1px solid #303944;background:#11161c;border-radius:12px;padding:14px}h1{margin:0 0 5px;font-size:20px}.muted{color:#9eabb8;font-size:12px;line-height:1.45}.row{display:flex;gap:8px;flex-wrap:wrap}button{font:inherit;color:#fff;background:#202832;border:1px solid #536171;border-radius:9px;padding:12px 14px}button:disabled{opacity:.45}.big{font-weight:700}.status{font-size:14px;line-height:1.5}video{width:100%;max-height:52vh;background:#000;border-radius:10px;display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.4;max-height:360px;overflow:auto;margin:0}.pass{color:#8ee6a8}.fail{color:#ff9d9d}
+</style>
+</head>
+<body><main>
+<section class="card"><h1>STRAW DUMMY // CAMERA</h1><div class="muted">Question: can this HTTPS page obtain the Pixel camera and read actual image bytes? No WebXR. No libraries. No hand-waving.</div></section>
+<section class="card"><div id="status" class="status">BOOTING…</div><div class="row" style="margin-top:12px"><button id="cameraBtn" class="big">1. OPEN REAR CAMERA</button><button id="pixelsBtn" disabled>2. PROVE PIXELS</button><button id="exportBtn">EXPORT JSON</button></div></section>
+<section class="card"><video id="video" playsinline muted autoplay></video></section>
+<section class="card"><pre id="log"></pre></section>
+</main>
+<script>
+(()=>{'use strict';
+const BUILD='strawdummy-camera-v1';
+const video=document.getElementById('video'),statusEl=document.getElementById('status'),logEl=document.getElementById('log'),cameraBtn=document.getElementById('cameraBtn'),pixelsBtn=document.getElementById('pixelsBtn');
+let stream=null;
+const evidence={build:BUILD,startedAt:new Date().toISOString(),location:location.href,environment:{},events:[],camera:null,pixels:null};
+const now=()=>new Date().toISOString();
+function log(stage,result,data){const e={t:now(),stage,result,...(data?{data}:{})};evidence.events.push(e);logEl.textContent=evidence.events.map(x=>`${x.t.slice(11,23)} ${x.stage} => ${x.result}${x.data?' '+JSON.stringify(x.data):''}`).join('\n');logEl.scrollTop=logEl.scrollHeight;}
+function status(text,ok=null){statusEl.textContent=text;statusEl.className='status '+(ok===true?'pass':ok===false?'fail':'');}
+function err(e){return{name:e?.name||'Error',message:e?.message||String(e)}}
+evidence.environment={secureContext:self.isSecureContext,origin:location.origin,userAgent:navigator.userAgent,hasMediaDevices:!!navigator.mediaDevices,hasGetUserMedia:!!navigator.mediaDevices?.getUserMedia,hasRequestVideoFrameCallback:typeof HTMLVideoElement.prototype.requestVideoFrameCallback==='function',hasCanvas2D:!!document.createElement('canvas').getContext};
+log('environment','OBSERVED',evidence.environment);
+if(!self.isSecureContext)status('FAIL: page is not a secure context.',false);else if(!navigator.mediaDevices?.getUserMedia)status('FAIL: getUserMedia is unavailable.',false);else status('READY: secure context + getUserMedia present. Open the camera.',true);
+async function waitVideo(){if(video.readyState>=2&&video.videoWidth>0)return;await new Promise((resolve,reject)=>{const to=setTimeout(()=>reject(new Error('video did not become ready in 6s')),6000);video.addEventListener('loadeddata',()=>{clearTimeout(to);resolve()},{once:true})})}
+cameraBtn.onclick=async()=>{cameraBtn.disabled=true;status('REQUESTING CAMERA…');log('camera','REQUESTING');try{stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}}});video.srcObject=stream;video.style.display='block';await video.play();await waitVideo();const track=stream.getVideoTracks()[0];if(!track)throw new Error('stream contained no video track');const settings=track.getSettings?.()||{};const capabilities=track.getCapabilities?.()||{};evidence.camera={label:track.label||null,readyState:track.readyState,muted:track.muted,settings,capabilities,videoWidth:video.videoWidth,videoHeight:video.videoHeight};log('camera','PASS',evidence.camera);status(`CAMERA PASS: live ${video.videoWidth}×${video.videoHeight} stream. Now prove readable pixels.`,true);pixelsBtn.disabled=false}catch(e){const x=err(e);evidence.camera={error:x};log('camera','FAIL',x);status(`CAMERA FAIL: ${x.name}: ${x.message}`,false);cameraBtn.disabled=false}};
+function pixelSample(ctx,w,h){ctx.drawImage(video,0,0,w,h);const d=ctx.getImageData(0,0,w,h).data;let l=0,hsh=2166136261>>>0;for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];l+=.2126*r+.7152*g+.0722*b;hsh^=r;hsh=Math.imul(hsh,16777619)>>>0;hsh^=g;hsh=Math.imul(hsh,16777619)>>>0;hsh^=b;hsh=Math.imul(hsh,16777619)>>>0}return{meanLuma:+(l/(w*h)).toFixed(3),hash32:hsh>>>0,center:Array.from(ctx.getImageData(w>>1,h>>1,1,1).data)}}
+pixelsBtn.onclick=async()=>{pixelsBtn.disabled=true;status('READING ACTUAL PIXELS…');log('pixels','REQUESTING');try{if(!stream?.active)throw new Error('camera stream is not active');await waitVideo();const w=64,h=36,c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});if(!ctx)throw new Error('Canvas2D unavailable');const samples=[];if(typeof video.requestVideoFrameCallback==='function'){await new Promise((resolve,reject)=>{let n=0;const to=setTimeout(()=>n>=2?resolve():reject(new Error(`only ${n} video frame callbacks in 4s`)),4000);const f=(_t,m)=>{n++;samples.push({callback:n,mediaTime:m?.mediaTime??null,presentedFrames:m?.presentedFrames??null,...pixelSample(ctx,w,h)});if(n>=20){clearTimeout(to);resolve()}else video.requestVideoFrameCallback(f)};video.requestVideoFrameCallback(f)})}else{for(let i=0;i<10;i++){samples.push({sample:i+1,...pixelSample(ctx,w,h)});await new Promise(r=>setTimeout(r,100))}}if(!samples.length)throw new Error('zero readable samples');const hashes=samples.map(x=>x.hash32),lumas=samples.map(x=>x.meanLuma);evidence.pixels={path:'MediaStream -> HTMLVideoElement -> Canvas2D.drawImage -> getImageData',sampleSize:[w,h],sampleCount:samples.length,distinctPixelHashes:new Set(hashes).size,meanLumaMin:Math.min(...lumas),meanLumaMax:Math.max(...lumas),first:samples[0],last:samples[samples.length-1]};log('pixels','PASS',evidence.pixels);status(`PIXEL PASS: ${samples.length} readable samples, ${evidence.pixels.distinctPixelHashes} distinct frame hashes. Physical camera bytes reached JavaScript.`,true)}catch(e){const x=err(e);evidence.pixels={error:x};log('pixels','FAIL',x);status(`PIXEL FAIL: ${x.name}: ${x.message}`,false);pixelsBtn.disabled=false}};
+document.getElementById('exportBtn').onclick=()=>{evidence.exportedAt=now();const blob=new Blob([JSON.stringify(evidence,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=`strawdummy-camera-${Date.now()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+})();
+</script></body></html>
