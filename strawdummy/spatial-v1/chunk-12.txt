@@ -1,0 +1,14 @@
+tate.index]; $('runBtn').disabled=true; $('repeatBtn').disabled=true; $('continueBtn').disabled=true; state.currentTerminal=false; setStatus('RUNNING…','warn'); setPhase('RUNNING',s.goal); emit(s.id,'START');
+  const started=nowISO(); let result;
+  try{result=await s.run();}catch(e){result=failure(e);} cleanupActive();
+  const attempt={startedAt:started,endedAt:nowISO(),raw:cloneable(result.raw),normalized:cloneable(result.normalized),summary:result.summary||''}; addAttempt(s.id,attempt); emit(s.id,'END',{verdict:attempt.normalized?.verdict}); displayAttempt(attempt); $('runBtn').disabled=false; setPhase('TEST COMPLETE','Review the result. Repeat it, inspect raw evidence, or save and continue.');
+}
+function render(){
+  const s=SLIDES[state.index]; $('slideCounter').textContent=`${String(state.index).padStart(2,'0')} / ${String(SLIDES.length-1).padStart(2,'0')}`; $('buildTag').textContent=BUILD; $('slideId').textContent=`SLIDE ${state.index}`; $('slideTitle').textContent=s.title; $('slideGoal').textContent=s.goal; $('progressBar').style.width=`${(state.index/(SLIDES.length-1))*100}%`; $('prevBtn').disabled=state.index===0;
+  const entry=state.session.slides[s.id]; const last=entry?.attempts?.at(-1); const acc=accepted(s.id); state.currentTerminal=!!last&&terminalVerdict(last.normalized?.verdict); $('continueBtn').disabled=!state.currentTerminal||state.index===SLIDES.length-1; $('repeatBtn').disabled=!last; $('runBtn').textContent=last?'RUN AGAIN':'RUN THIS TEST';
+  if(last)displayAttempt(last); else {setStatus('NOT TESTED');setPhase('READY','Run this slide. Future slides remain untouched.');}
+  if(acc) $('status').textContent += `\nSAVED ATTEMPT: ${entry.acceptedAttempt+1}`;
+  renderRaw(); renderSession();
+}
+function renderRaw(){const s=SLIDES[state.index];const entry=state.session.slides[s.id];$('rawOut').textContent=JSON.stringify({slide:s.id,attempts:entry?.attempts||[],acceptedAttempt:entry?.acceptedAttempt??null},null,2);$('rawCard').classList.toggle('hidden',!state.rawOpen);}
+function renderSession(){$('sessionOut').textContent=JSON.stringify({schema:state.session.schema,build:state.session.build,sessionId:state.session.sessionId,startedAt:state.session.startedAt,location:state.session.location,environment:state.session.environment,eventCount:state.session.events.length,savedSlides:Object.fromEntries(Object.entries(state.session.slides).map(([k,v])=>[k,
