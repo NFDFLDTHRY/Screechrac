@@ -1057,11 +1057,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
         if (child && typeof child === 'object') walk(child, path ? `${path}.${key}` : key, explicitPass);
       }
     };
-    walk(root, '
-</script>
-</body>
-</html>
-, false);
+    walk(root, '$', false);
     if (root.knownPriorFacts && typeof root.knownPriorFacts === 'object') {
       for (const [id, value] of Object.entries(root.knownPriorFacts)) if (value && !/FAIL|MENTION/i.test(String(value.status || value))) facts.push({ id, path: `$.knownPriorFacts.${id}`, evidenceStatus: value.status || 'KNOWN-PRIOR' });
     }
