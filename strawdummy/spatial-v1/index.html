@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>StrawDummy Spatial Capability Interrogator v1</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="wrap"><div class="eyebrow">STRAW DUMMY / SPATIAL PRIMITIVES</div><div class="title">Capability Interrogator v1</div><div class="progress"><div id="progressBar"></div></div><div class="meta"><span id="slideCounter">00 / 25</span><span id="buildTag"></span></div></div></header>
+<main>
+<section class="card slide"><div class="eyebrow" id="slideId"></div><h2 id="slideTitle"></h2><div class="goal" id="slideGoal"></div></section>
+<section class="card" id="instructionCard"><div class="eyebrow">OPERATOR STEP</div><div class="phase" id="phaseText">Loading probe…</div><div class="small" id="phaseDetail"></div></section>
+<section class="card" id="videoCard"><video id="video" playsinline muted autoplay></video></section>
+<section class="card"><div class="eyebrow">CURRENT RESULT</div><div class="status" id="status">LOADING</div></section>
+<section class="card"><div class="row"><button id="runBtn" class="primary" disabled>RUN THIS TEST</button><button id="repeatBtn" disabled>REPEAT THIS TEST</button><button id="rawBtn" disabled>VIEW RAW EVIDENCE</button><button id="continueBtn" disabled>SAVE RESULT & CONTINUE</button></div><div class="row" style="margin-top:8px"><button id="prevBtn" disabled>PREVIOUS</button><button id="exportBtn" disabled>EXPORT ALL EVIDENCE</button><button id="resetBtn" class="danger" disabled>NEW SESSION</button></div></section>
+<section class="card hidden" id="rawCard"><div class="eyebrow">RAW + NORMALIZED EVIDENCE</div><pre id="rawOut"></pre></section>
+<section class="card"><details><summary>Session machine evidence</summary><pre id="sessionOut"></pre></details></section>
+<section class="card footer-note">No WebXR. No XR Blocks. No external libraries. Each slide records its own attempts. A retry appends evidence; it never erases the prior attempt. Standards suggest where to look. Chrome decides what machinery actually exists.</section>
+</main>
+<script>
+(async()=>{try{const files=['part-0.txt','part-1.txt','part-2.txt','part-3.txt','part-4.txt'];const chunks=[];for(const f of files){const r=await fetch(f,{cache:'no-store'});if(!r.ok)throw new Error(`${f}: HTTP ${r.status}`);chunks.push(await r.text())}new Function(chunks.join('\n'))();}catch(e){document.getElementById('status').textContent='BOOT FAIL\n'+e.name+': '+e.message;document.getElementById('phaseText').textContent='Probe loader failed';console.error(e)}})();
+</script>
+</body></html>
