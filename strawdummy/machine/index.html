@@ -271,8 +271,12 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.4;b
   function neighbors(leaves, anchor) {
     var immediate = parentPath(anchor.path, 1);
     var family = parentPath(anchor.path, 2);
+    var prefixes = [];
+    if (immediate !== '$') prefixes.push(immediate);
+    if (family !== '$' && family !== immediate) prefixes.push(family);
+    if (!prefixes.length) return [anchor];
     return leaves.filter(function (leaf) {
-      return leaf.path.indexOf(immediate) === 0 || leaf.path.indexOf(family) === 0;
+      return prefixes.some(function (prefix) { return leaf.path.indexOf(prefix) === 0; });
     }).slice(0, 160);
   }
 
