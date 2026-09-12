@@ -1,0 +1,19 @@
+ await sleep(2000); raw.baseline=bucket.splice(0,500); norm.emits=raw.baseline.length>0;
+  setPhase('GET READY',`Next: ${actionText}`); await sleep(800); bucket.splice(0,bucket.length); setPhase(actionText,'Move only as instructed for 3 seconds.'); await sleep(3000); raw.active=bucket.splice(0,800);
+  try{sensor.stop()}catch{} cleanupActive();
+  raw.errorEvent=err; raw.baselineStats=summarizeSamples(raw.baseline,axes); raw.activeStats=summarizeSamples(raw.active,axes); raw.responseDelta=deltaScore(raw.baseline,raw.active,axes);
+  if(err && !norm.emits){ norm.verdict=['SecurityError','NotAllowedError'].includes(err.name)?'BLOCKED':'FAIL'; }
+  else if(norm.emits && raw.active.length){ norm.responds=responseCheck?responseCheck(raw):raw.responseDelta>0.01; norm.verdict=norm.responds?'CHARACTERIZED':'EMITTING'; }
+  else norm.verdict=norm.starts?'STARTED':'CONSTRUCTED';
+  return {raw,normalized:norm,summary:`${raw.baseline.length} baseline + ${raw.active.length} active samples. Response delta ${raw.responseDelta}.`};
+}
+
+async function twoPhaseEvent(eventName, actionText, extractor, axes, responseCheck=null){
+  const raw={eventName,baseline:[],active:[],eventShape:null,errors:[]}; const norm={exists:true,constructs:true,starts:true,emits:false,responds:false,verdict:'STARTED'};
+  const bucket=[]; const handler=e=>{if(!raw.eventShape)raw.eventShape=objectShape(e);try{bucket.push({pageTimeMs:+perf().toFixed(3),eventTimeStamp:e.timeStamp,...extractor(e)});}catch(err){raw.errors.push(compactError(err));}};
+  window.addEventListener(eventName,handler);registerCleanup(()=>window.removeEventListener(eventName,handler));
+  setPhase('HOLD STILL','Collecting a 2 second baseline.');await sleep(2000);raw.baseline=bucket.splice(0,500);norm.emits=raw.baseline.length>0;
+  setPhase('GET READY',`Next: ${actionText}`);await sleep(800);bucket.splice(0,bucket.length);setPhase(actionText,'Move only as instructed for 3 seconds.');await sleep(3000);raw.active=bucket.splice(0,800);cleanupActive();
+  raw.baselineStats=summarizeSamples(raw.baseline,axes);raw.activeStats=summarizeSamples(raw.active,axes);raw.responseDelta=deltaScore(raw.baseline,raw.active,axes);
+  if(norm.emits&&raw.active.length){norm.responds=responseCheck?responseCheck(raw):raw.responseDelta>0.01;norm.verdict=norm.responds?'CHARACTERIZED':'EMITTING';}
+  return {raw,normalized:norm,summary:`${eventName}: ${raw.baseline.le
