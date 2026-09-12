@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>StrawDummy Spatial Capability Interrogator v1.1</title>
+<style>
+:root{color-scheme:dark;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--bg:#080b0e;--panel:#11161c;--line:#2b3540;--muted:#98a5b3;--text:#f1f5f9;--good:#8ee6a8;--bad:#ff9d9d;--warn:#ffd479}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}header{position:sticky;top:0;z-index:4;background:#0b0f13ee;border-bottom:1px solid var(--line)}header .wrap{max-width:880px;margin:auto;padding:12px 16px}.eyebrow{font-size:11px;color:var(--muted);letter-spacing:.08em}.title{font-size:18px;font-weight:800;margin-top:3px}.progress{height:6px;background:#1a222b;border-radius:999px;overflow:hidden;margin-top:10px}.progress>div{height:100%;background:#83909e;width:0}.meta{display:flex;justify-content:space-between;gap:12px;margin-top:7px;font-size:11px;color:var(--muted)}main{max-width:880px;margin:auto;padding:16px;display:grid;gap:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.slide h2{margin:3px 0 7px;font-size:21px}.goal{font-size:13px;color:var(--muted);line-height:1.45}.status{font-size:14px;line-height:1.55;white-space:pre-wrap}.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.row{display:flex;gap:8px;flex-wrap:wrap}button{font:inherit;color:#fff;background:#202832;border:1px solid #536171;border-radius:10px;padding:11px 13px}button.primary{font-weight:800;background:#28323d}button:disabled{opacity:.4}.danger{border-color:#7b4b4b}.small{font-size:11px;color:var(--muted);line-height:1.45}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.4;max-height:420px;overflow:auto;margin:0;background:#090d11;padding:10px;border-radius:10px;border:1px solid #202832}video{width:100%;max-height:42vh;background:#000;border-radius:10px;display:none}.phase{font-weight:800;font-size:16px;margin:6px 0}.hidden{display:none!important}details summary{cursor:pointer;color:#cfd7df}.footer-note{font-size:11px;color:var(--muted);line-height:1.5}.meter{height:7px;background:#1a222b;border-radius:999px;overflow:hidden;margin-top:10px}.meter>div{height:100%;width:0;background:#7e8b98;transition:width .15s linear}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="eyebrow">STRAW DUMMY / SPATIAL PRIMITIVES</div><div class="title">Capability Interrogator v1.1</div><div class="progress"><div id="progressBar"></div></div><div class="meta"><span id="slideCounter">00 / 27</span><span id="buildTag"></span></div></div></header>
+<main>
+<section class="card slide"><div class="eyebrow" id="slideId"></div><h2 id="slideTitle"></h2><div class="goal" id="slideGoal"></div></section>
+<section class="card"><div class="eyebrow">OPERATOR STEP</div><div class="phase" id="phaseText">Loading probe…</div><div class="small" id="phaseDetail"></div><div class="meter"><div id="phaseMeter"></div></div></section>
+<section class="card"><video id="video" playsinline muted autoplay></video></section>
+<section class="card"><div class="eyebrow">CURRENT RESULT</div><div class="status" id="status">LOADING</div></section>
+<section class="card"><div class="row"><button id="runBtn" class="primary">RUN THIS TEST</button><button id="repeatBtn" disabled>REPEAT THIS TEST</button><button id="rawBtn">VIEW RAW EVIDENCE</button><button id="continueBtn" disabled>SAVE RESULT & CONTINUE</button></div><div class="row" style="margin-top:8px"><button id="prevBtn">PREVIOUS</button><button id="cancelBtn" class="danger" disabled>CANCEL CURRENT TEST</button><button id="exportBtn">EXPORT ALL EVIDENCE</button><button id="resetBtn" class="danger">NEW SESSION</button></div></section>
+<section class="card hidden" id="rawCard"><div class="eyebrow">RAW + NORMALIZED EVIDENCE</div><pre id="rawOut"></pre></section>
+<section class="card"><details><summary>Session machine evidence</summary><pre id="sessionOut"></pre></details></section>
+<section class="card footer-note">No WebXR dependency. No XR Blocks. No external libraries. Retries append evidence. Baselines are admitted only after observed stillness. Movement phases begin only after the sensor itself detects movement. Page visibility/focus transitions are recorded because Chrome lifecycle behavior is part of the experiment.</section>
+</main>
+<script>
+(async()=>{try{const files=Array.from({length:12},(_,i)=>`chunk-${String(i).padStart(2,'0')}.txt`);const chunks=[];for(const f of files){const r=await fetch(f,{cache:'no-store'});if(!r.ok)throw new Error(`${f}: HTTP ${r.status}`);chunks.push(await r.text());}new Function(chunks.join(''))();}catch(e){document.getElementById('status').textContent='BOOT FAIL\n'+(e?.name||'Error')+': '+(e?.message||e);document.getElementById('phaseText').textContent='Probe loader failed';console.error(e);}})();
+</script>
+</body>
+</html>
