@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b0d">
+<title>StrawDummy Machine Surface</title>
+<style>
+:root{color-scheme:dark;--bg:#090b0d;--panel:#111519;--panel2:#171c21;--line:#29323a;--text:#edf3f7;--muted:#93a1ad;--good:#9ce0b2;--warn:#f4cc7b;--bad:#ff9999;--accent:#d9e3ea}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}body{min-height:100vh}
+.wrap{width:min(920px,100%);margin:auto;padding:16px}.top{position:sticky;top:0;z-index:10;background:rgba(9,11,13,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.eyebrow{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}.title{font-size:clamp(22px,6vw,36px);font-weight:900;margin:5px 0}.meta{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:11px}
+.progress{height:4px;background:#1a2025;margin-top:12px;border-radius:99px;overflow:hidden}.progress>div{height:100%;width:2.27%;background:var(--accent)}main{padding-bottom:60px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}.hero{background:linear-gradient(180deg,#151a1f,#101418)}h2{font-size:23px;margin:8px 0}p{line-height:1.5;color:#cbd5dc}.question{font-size:18px;line-height:1.45}.rule{border-left:3px solid var(--accent);padding-left:12px;color:#dbe4ea}
+.row{display:flex;gap:8px;flex-wrap:wrap}button{border:1px solid #3a4650;background:#1a2127;color:var(--text);font:inherit;font-weight:800;border-radius:10px;padding:13px 14px;min-height:46px}button.primary{background:#e8eef2;color:#0b0e10;border-color:#e8eef2}button:disabled{opacity:.38}.wide{flex:1 1 220px}
+.status{font-size:23px;font-weight:900;margin-top:6px}.status.idle{color:var(--muted)}.status.running{color:var(--warn)}.status.observed{color:var(--good)}.status.fail{color:var(--bad)}
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.step{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2)}.step b{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}.step span{font-weight:900}.claimed{border-color:#56705f}.untested span{color:#72808a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}.datum{background:#0c0f12;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:hidden}.datum .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.datum .v{font-size:13px;margin-top:5px;overflow-wrap:anywhere}
+.compare{width:100%;border-collapse:collapse;font-size:12px}.compare th,.compare td{border-bottom:1px solid var(--line);padding:9px 6px;text-align:left;vertical-align:top}.compare th{color:var(--muted);font-size:10px;text-transform:uppercase}.claim{color:#dfe7ec}.machine{color:#87949d}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.4;background:#090c0e;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:48vh;overflow:auto}.hidden{display:none}.locked{text-align:center;color:var(--muted);padding:9px}.tiny{font-size:11px;color:var(--muted);line-height:1.45}
+@media(max-width:560px){.ladder{grid-template-columns:repeat(2,1fr)}.wrap{padding:12px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<div class="eyebrow">STRAWDUMMY / MACHINE SURFACE</div><div class="title">What machine did Chrome actually give us?</div>
+<div class="meta"><span>SLIDE 01 / 44</span><span id="buildTag"></span></div><div class="progress"><div></div></div>
+</div></header>
+<main class="wrap">
+<section class="card hero">
+<div class="eyebrow">01 · IDENTIFY THE WITNESS</div><h2>Machine Fingerprint</h2>
+<div class="question">What does this browser claim exists before we make any of it perform?</div>
+<p class="rule">This slide records claims and identity only. API presence, exposed limits, and browser-reported tiers are <b>not PASS results</b>.</p>
+</section>
+<section class="card">
+<div class="eyebrow">OPERATOR STEP</div><p>Leave the phone as it is. Tap the button once. No movement, camera, GPU dispatch, sensor permission, or benchmark is requested on this slide.</p>
+<div class="row"><button id="runBtn" class="primary wide">RUN THIS TEST</button><button id="repeatBtn" disabled>REPEAT</button></div>
+</section>
+<section class="card">
+<div class="eyebrow">CURRENT RESULT</div><div id="status" class="status idle">NOT RUN</div><p id="statusDetail" class="tiny">Waiting for operator.</p>
+</section>
+<section class="card">
+<div class="eyebrow">EVIDENCE LADDER</div><div class="ladder" style="margin-top:10px">
+<div id="claimStep" class="step untested"><b>CLAIMED</b><span>NOT OBSERVED</span></div>
+<div class="step untested"><b>ADMITTED</b><span>NOT TESTED</span></div><div class="step untested"><b>EXECUTED</b><span>NOT TESTED</span></div>
+<div class="step untested"><b>CORRECT</b><span>NOT TESTED</span></div><div class="step untested"><b>SUSTAINED</b><span>NOT TESTED</span></div><div class="step untested"><b>USEFUL</b><span>NOT TESTED</span></div>
+</div></section>
+<section id="summaryCard" class="card hidden"><div class="eyebrow">BROWSER CLAIMS</div><div id="summary" class="grid" style="margin-top:10px"></div></section>
+<section id="compareCard" class="card hidden"><div class="eyebrow">CLAIMED vs OBSERVED MACHINE</div><table class="compare" style="margin-top:8px"><thead><tr><th>Surface</th><th>Browser claim</th><th>Observed machine</th></tr></thead><tbody id="compareBody"></tbody></table></section>
+<section class="card"><div class="row"><button id="exportBtn">EXPORT EVIDENCE</button><button id="copyBtn">COPY JSON</button><button id="rawBtn">VIEW RAW</button><button id="resetBtn">NEW SESSION</button></div><div id="rawCard" class="hidden"><pre id="rawOut"></pre></div></section>
+<section class="card locked"><b>SLIDE 02 LOCKED</b><br><span class="tiny">Forge the next test only after Slide 01 evidence is in hand.</span></section>
+</main>
+<script>
+(()=>{'use strict';
+const BUILD='strawdummy-machine-surface-v0.1.0-slide01';
+const SCHEMA='strawdummy/machine-surface-v1';
+const STORE_KEY='strawdummy:machine-surface:v1';
+const SLIDE_ID='01-machine-fingerprint';
+const TOTAL_SLIDES=44;
+const $=id=>document.getElementById(id);
+const now=()=>new Date().toISOString();
+const clone=v=>{try{return JSON.parse(JSON.stringify(v))}catch{return String(v)}};
+const errObj=e=>({name:e?.name||'Error',message:e?.message||String(e)});
+$('buildTag').textContent=BUILD;
+
+function fresh(){return{schema:SCHEMA,sessionId:crypto.randomUUID?.()||String(Date.now()),startedAt:now(),lastUpdatedAt:null,suite:{name:'StrawDummy Machine Surface',totalSlides:TOTAL_SLIDES,forgedSlides:1,builds:[BUILD]},origin:location.origin,slides:{},events:[]}}
+function load(){try{const x=JSON.parse(localStorage.getItem(STORE_KEY));if(x?.schema===SCHEMA){x.suite=x.suite||{};x.suite.totalSlides=TOTAL_SLIDES;x.suite.forgedSlides=Math.max(x.suite.forgedSlides||0,1);x.suite.builds=[...new Set([...(x.suite.builds||[]),BUILD])];x.slides=x.slides||{};x.events=x.events||[];return x}}catch{}return fresh()}
+let evidence=load();
+function event(stage,result,data){evidence.events.push({sequence:evidence.events.length,timestamp:now(),slideId:SLIDE_ID,stage,result,...(data===undefined?{}:{data:clone(data)})});save()}
+function save(){evidence.lastUpdatedAt=now();try{localStorage.setItem(STORE_KEY,JSON.stringify(evidence))}catch{};saveIDB().catch(()=>{})}
+async function saveIDB(){if(!('indexedDB' in globalThis))return;const db=await new Promise((res,rej)=>{const r=indexedDB.open('strawdummy-machine-surface',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('sessions'))r.result.createObjectStore('sessions')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});await new Promise((res,rej)=>{const tx=db.transaction('sessions','readwrite');tx.objectStore('sessions').put(evidence,evidence.sessionId);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});db.close()}
+function present(v){if(v===undefined)return 'UNEXPOSED';if(v===null)return 'null';if(typeof v==='boolean')return v?'YES':'NO';if(typeof v==='object')return JSON.stringify(v);return String(v)}
+function exists(name,root=globalThis){try{return name in root}catch{return false}}
+function navExists(name){try{return name in navigator}catch{return false}}
+function storageProbe(){let ls=false;try{const k='__sd_probe__';localStorage.setItem(k,'1');ls=localStorage.getItem(k)==='1';localStorage.removeItem(k)}catch{}return ls}
+async function uaData(){const u=navigator.userAgentData;if(!u)return null;const out={brands:clone(u.brands),mobile:u.mobile,platform:u.platform};if(u.getHighEntropyValues){try{Object.assign(out,await u.getHighEntropyValues(['architecture','bitness','formFactors','fullVersionList','model','platformVersion','uaFullVersion','wow64']))}catch(e){out.highEntropyError=errObj(e)}}return out}
+function apiClaims(){return{
+execution:{Worker:exists('Worker'),SharedWorker:exists('SharedWorker'),WebAssembly:exists('WebAssembly'),SharedArrayBuffer:exists('SharedArrayBuffer'),Atomics:exists('Atomics'),OffscreenCanvas:exists('OffscreenCanvas'),PressureObserver:exists('PressureObserver'),scheduler:exists('scheduler')},
+gpu:{webgpu:navExists('gpu'),WebGL2RenderingContext:exists('WebGL2RenderingContext')},
+media:{mediaDevices:!!navigator.mediaDevices,getUserMedia:!!navigator.mediaDevices?.getUserMedia,MediaStreamTrackProcessor:exists('MediaStreamTrackProcessor'),VideoFrame:exists('VideoFrame'),ImageCapture:exists('ImageCapture'),VideoEncoder:exists('VideoEncoder'),VideoDecoder:exists('VideoDecoder'),AudioEncoder:exists('AudioEncoder'),AudioDecoder:exists('AudioDecoder'),mediaCapabilities:navExists('mediaCapabilities')},
+audio:{AudioContext:exists('AudioContext')||exists('webkitAudioContext'),AudioWorkletNode:exists('AudioWorkletNode')},
+sensors:{Accelerometer:exists('Accelerometer'),LinearAccelerationSensor:exists('LinearAccelerationSensor'),GravitySensor:exists('GravitySensor'),Gyroscope:exists('Gyroscope'),RelativeOrientationSensor:exists('RelativeOrientationSensor'),AbsoluteOrientationSensor:exists('AbsoluteOrientationSensor'),Magnetometer:exists('Magnetometer'),DeviceMotionEvent:exists('DeviceMotionEvent'),DeviceOrientationEvent:exists('DeviceOrientationEvent')},
+mlVision:{webnn:navExists('ml'),BarcodeDetector:exists('BarcodeDetector'),FaceDetector:exists('FaceDetector'),TextDetector:exists('TextDetector')},
+external:{bluetooth:navExists('bluetooth'),usb:navExists('usb'),serial:navExists('serial'),NDEFReader:exists('NDEFReader'),RTCPeerConnection:exists('RTCPeerConnection')},
+storage:{indexedDB:exists('indexedDB'),localStorageWritable:storageProbe(),storageManager:navExists('storage'),OPFS:!!navigator.storage?.getDirectory,persist:!!navigator.storage?.persist,estimate:!!navigator.storage?.estimate},
+power:{getBattery:typeof navigator.getBattery==='function'}
+}}
+async function collect(){const start=performance.now();const mem=performance.memory?{jsHeapSizeLimit:performance.memory.jsHeapSizeLimit,totalJSHeapSize:performance.memory.totalJSHeapSize,usedJSHeapSize:performance.memory.usedJSHeapSize}:null;const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;return{
+collectedAt:now(),elapsedMs:null,
+identity:{userAgent:navigator.userAgent,uaData:await uaData(),language:navigator.language,languages:clone(navigator.languages),platform:navigator.platform,vendor:navigator.vendor,mobile:navigator.userAgentData?.mobile??null,maxTouchPoints:navigator.maxTouchPoints},
+context:{href:location.href,origin:location.origin,protocol:location.protocol,secureContext:isSecureContext,crossOriginIsolated:globalThis.crossOriginIsolated,visibilityState:document.visibilityState,online:navigator.onLine,webdriver:navigator.webdriver??null},
+display:{innerWidth:innerWidth,innerHeight:innerHeight,screenWidth:screen.width,screenHeight:screen.height,availWidth:screen.availWidth,availHeight:screen.availHeight,colorDepth:screen.colorDepth,pixelDepth:screen.pixelDepth,devicePixelRatio:devicePixelRatio,orientation:screen.orientation?{type:screen.orientation.type,angle:screen.orientation.angle}:null},
+claimedCompute:{hardwareConcurrency:navigator.hardwareConcurrency??null,deviceMemory:navigator.deviceMemory??null,cpuPerformance:('cpuPerformance' in navigator)?navigator.cpuPerformance:null,performanceMemory:mem},
+connection:conn?{effectiveType:conn.effectiveType??null,downlink:conn.downlink??null,rtt:conn.rtt??null,saveData:conn.saveData??null,type:conn.type??null}:null,
+apis:apiClaims(),
+elapsedMs:+(performance.now()-start).toFixed(3)
+}}
+function flattenPresence(group){return Object.values(group||{}).filter(v=>v===true).length+'/'+Object.keys(group||{}).length+' surfaced'}
+function render(result){$('summaryCard').classList.remove('hidden');$('compareCard').classList.remove('hidden');const items=[['Secure context',result.context.secureContext],['Cross-origin isolated',result.context.crossOriginIsolated],['hardwareConcurrency',result.claimedCompute.hardwareConcurrency],['deviceMemory',result.claimedCompute.deviceMemory],['CPU performance tier',result.claimedCompute.cpuPerformance],['JS heap limit',result.claimedCompute.performanceMemory?.jsHeapSizeLimit??null],['GPU surfaces',flattenPresence(result.apis.gpu)],['Media surfaces',flattenPresence(result.apis.media)],['Sensor surfaces',flattenPresence(result.apis.sensors)],['ML / vision',flattenPresence(result.apis.mlVision)],['External hardware',flattenPresence(result.apis.external)],['Capture time',result.elapsedMs+' ms']];$('summary').innerHTML=items.map(([k,v])=>`<div class="datum"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(present(v))}</div></div>`).join('');const comp=[['CPU lanes',result.claimedCompute.hardwareConcurrency],['CPU performance',result.claimedCompute.cpuPerformance],['Device memory',result.claimedCompute.deviceMemory],['JS heap limit',result.claimedCompute.performanceMemory?.jsHeapSizeLimit??'UNEXPOSED'],['WebGPU','webgpu' in result.apis.gpu && result.apis.gpu.webgpu?'SURFACED':'NOT SURFACED'],['Camera',result.apis.media.getUserMedia?'SURFACED':'NOT SURFACED'],['WASM',result.apis.execution.WebAssembly?'SURFACED':'NOT SURFACED'],['Sensors',flattenPresence(result.apis.sensors)],['WebNN',result.apis.mlVision.webnn?'SURFACED':'NOT SURFACED']];$('compareBody').innerHTML=comp.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td class="claim">${escapeHtml(present(v))}</td><td class="machine">NOT MEASURED ON SLIDE 01</td></tr>`).join('');$('rawOut').textContent=JSON.stringify(result,null,2)}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function run(){const btn=$('runBtn');btn.disabled=true;$('repeatBtn').disabled=true;$('status').className='status running';$('status').textContent='OBSERVING';$('statusDetail').textContent='Reading browser-exposed identity and capability claims. No heavy capability is being executed.';event('fingerprint','START');try{const result=await collect();const slide=evidence.slides[SLIDE_ID]||(evidence.slides[SLIDE_ID]={title:'Machine Fingerprint',attempts:[]});slide.attempts.push({attempt:slide.attempts.length+1,status:'OBSERVED',timestamp:now(),result});slide.latest=result;slide.status='OBSERVED';save();event('fingerprint','OBSERVED',{attempt:slide.attempts.length,elapsedMs:result.elapsedMs});render(result);$('status').className='status observed';$('status').textContent='OBSERVED · NOT A PASS';$('statusDetail').textContent='Chrome has testified. Nothing on this slide has been promoted to machine truth.';$('claimStep').className='step claimed';$('claimStep').querySelector('span').textContent='OBSERVED';$('repeatBtn').disabled=false}catch(e){event('fingerprint','FAIL',errObj(e));$('status').className='status fail';$('status').textContent='OBSERVATION FAILED';$('statusDetail').textContent=e?.message||String(e);$('repeatBtn').disabled=false}finally{btn.disabled=false}}
+function exportEvidence(){save();const text=JSON.stringify(evidence,null,2),blob=new Blob([text],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=`strawdummy-machine-${evidence.sessionId}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);event('evidence','EXPORTED',{bytes:blob.size})}
+async function copyEvidence(){const text=JSON.stringify(evidence,null,2);await navigator.clipboard.writeText(text);event('evidence','COPIED',{bytes:new Blob([text]).size})}
+function reset(){if(!confirm('Start a new StrawDummy machine session? Current exported files are unaffected.'))return;try{localStorage.removeItem(STORE_KEY)}catch{};location.reload()}
+$('runBtn').onclick=run;$('repeatBtn').onclick=run;$('exportBtn').onclick=exportEvidence;$('copyBtn').onclick=()=>copyEvidence().catch(e=>event('evidence','COPY_FAIL',errObj(e)));$('rawBtn').onclick=()=>{$('rawCard').classList.toggle('hidden')};$('resetBtn').onclick=reset;
+const prior=evidence.slides?.[SLIDE_ID]?.latest;if(prior){render(prior);$('status').className='status observed';$('status').textContent='PRIOR OBSERVATION LOADED';$('statusDetail').textContent='Repeat the slide to append a new observation; prior evidence is preserved.';$('claimStep').className='step claimed';$('claimStep').querySelector('span').textContent='OBSERVED';$('repeatBtn').disabled=false}
+event('page','LOADED',{build:BUILD,href:location.href});save();
+})();
+</script>
+</body></html>
