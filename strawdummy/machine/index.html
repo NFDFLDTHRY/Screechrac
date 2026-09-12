@@ -4,107 +4,748 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090b0d">
-<title>StrawDummy Machine Surface</title>
+<title>StrawDummy Machine Surface · Slide 02</title>
 <style>
-:root{color-scheme:dark;--bg:#090b0d;--panel:#111519;--panel2:#171c21;--line:#29323a;--text:#edf3f7;--muted:#93a1ad;--good:#9ce0b2;--warn:#f4cc7b;--bad:#ff9999;--accent:#d9e3ea}
+:root{color-scheme:dark;--bg:#090b0d;--panel:#111519;--panel2:#171c21;--line:#29323a;--text:#edf3f7;--muted:#93a1ad;--good:#9ce0b2;--warn:#f4cc7b;--bad:#ff9999;--accent:#d9e3ea;--prior:#aebdff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}body{min-height:100vh}
 .wrap{width:min(920px,100%);margin:auto;padding:16px}.top{position:sticky;top:0;z-index:10;background:rgba(9,11,13,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .eyebrow{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}.title{font-size:clamp(22px,6vw,36px);font-weight:900;margin:5px 0}.meta{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:11px}
-.progress{height:4px;background:#1a2025;margin-top:12px;border-radius:99px;overflow:hidden}.progress>div{height:100%;width:2.27%;background:var(--accent)}main{padding-bottom:60px}
+.progress{height:4px;background:#1a2025;margin-top:12px;border-radius:99px;overflow:hidden}.progress>div{height:100%;width:4.55%;background:var(--accent)}main{padding-bottom:60px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}.hero{background:linear-gradient(180deg,#151a1f,#101418)}h2{font-size:23px;margin:8px 0}p{line-height:1.5;color:#cbd5dc}.question{font-size:18px;line-height:1.45}.rule{border-left:3px solid var(--accent);padding-left:12px;color:#dbe4ea}
 .row{display:flex;gap:8px;flex-wrap:wrap}button{border:1px solid #3a4650;background:#1a2127;color:var(--text);font:inherit;font-weight:800;border-radius:10px;padding:13px 14px;min-height:46px}button.primary{background:#e8eef2;color:#0b0e10;border-color:#e8eef2}button:disabled{opacity:.38}.wide{flex:1 1 220px}
-.status{font-size:23px;font-weight:900;margin-top:6px}.status.idle{color:var(--muted)}.status.running{color:var(--warn)}.status.observed{color:var(--good)}.status.fail{color:var(--bad)}
-.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.step{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2)}.step b{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}.step span{font-weight:900}.claimed{border-color:#56705f}.untested span{color:#72808a}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}.datum{background:#0c0f12;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:hidden}.datum .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.datum .v{font-size:13px;margin-top:5px;overflow-wrap:anywhere}
-.compare{width:100%;border-collapse:collapse;font-size:12px}.compare th,.compare td{border-bottom:1px solid var(--line);padding:9px 6px;text-align:left;vertical-align:top}.compare th{color:var(--muted);font-size:10px;text-transform:uppercase}.claim{color:#dfe7ec}.machine{color:#87949d}
-pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.4;background:#090c0e;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:48vh;overflow:auto}.hidden{display:none}.locked{text-align:center;color:var(--muted);padding:9px}.tiny{font-size:11px;color:var(--muted);line-height:1.45}
-@media(max-width:560px){.ladder{grid-template-columns:repeat(2,1fr)}.wrap{padding:12px}.card{padding:14px}}
+.status{font-size:23px;font-weight:900;margin-top:6px}.status.idle{color:var(--muted)}.status.running,.status.partial{color:var(--warn)}.status.observed{color:var(--good)}.status.fail{color:var(--bad)}
+.pipeline{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.step{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2)}.step b{display:block;font-size:10px;color:var(--muted);margin-bottom:5px}.step span{font-weight:900}.step.pass{border-color:#56705f}.step.pass span{color:var(--good)}.step.warn{border-color:#74613e}.step.warn span{color:var(--warn)}.step.idle span{color:#72808a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}.datum{background:#0c0f12;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:hidden}.datum .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.datum .v{font-size:13px;margin-top:5px;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:9px 6px;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{color:var(--muted);font-size:10px;text-transform:uppercase}.match{color:var(--good)}.different{color:var(--bad)}.unknown{color:var(--muted)}.known{color:var(--prior);font-weight:900}.mention{color:var(--warn)}.absent{color:var(--muted)}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.4;background:#090c0e;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:48vh;overflow:auto}.hidden{display:none}.locked{text-align:center;color:var(--muted);padding:9px}.tiny{font-size:11px;color:var(--muted);line-height:1.45}.prereq{display:flex;justify-content:space-between;gap:12px;align-items:center}.pill{border:1px solid var(--line);border-radius:99px;padding:5px 9px;font-size:10px;font-weight:900}.pill.yes{border-color:#56705f;color:var(--good)}.pill.no{border-color:#74613e;color:var(--warn)}.scroll{overflow:auto}.path{font-size:10px;color:var(--muted);max-width:310px}
+@media(max-width:560px){.pipeline{grid-template-columns:repeat(2,1fr)}.wrap{padding:12px}.card{padding:14px}th:nth-child(3),td:nth-child(3){display:none}}
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<div class="eyebrow">STRAWDUMMY / MACHINE SURFACE</div><div class="title">What machine did Chrome actually give us?</div>
-<div class="meta"><span>SLIDE 01 / 44</span><span id="buildTag"></span></div><div class="progress"><div></div></div>
+<div class="eyebrow">STRAWDUMMY / MACHINE SURFACE</div>
+<div class="title">What machine did Chrome actually give us?</div>
+<div class="meta"><span>SLIDE 02 / 44</span><span id="buildTag"></span></div>
+<div class="progress"><div></div></div>
 </div></header>
 <main class="wrap">
 <section class="card hero">
-<div class="eyebrow">01 · IDENTIFY THE WITNESS</div><h2>Machine Fingerprint</h2>
-<div class="question">What does this browser claim exists before we make any of it perform?</div>
-<p class="rule">This slide records claims and identity only. API presence, exposed limits, and browser-reported tiers are <b>not PASS results</b>.</p>
+<div class="eyebrow">02 · PRESERVE THE WITNESSES</div>
+<h2>Previous Evidence Import</h2>
+<div class="question">Which machine facts have our earlier experiments already earned?</div>
+<p class="rule">A filename, API name, or narrative mention proves nothing. Slide 2 promotes only structured observations carrying execution or measurement evidence. Everything weaker remains quarantined as <b>MENTION-ONLY</b>.</p>
 </section>
 <section class="card">
-<div class="eyebrow">OPERATOR STEP</div><p>Leave the phone as it is. Tap the button once. No movement, camera, GPU dispatch, sensor permission, or benchmark is requested on this slide.</p>
-<div class="row"><button id="runBtn" class="primary wide">RUN THIS TEST</button><button id="repeatBtn" disabled>REPEAT</button></div>
+<div class="prereq"><div><div class="eyebrow">PREREQUISITE</div><div id="slide1Detail" class="tiny">Checking this origin for Slide 1.</div></div><span id="slide1Pill" class="pill no">CHECKING</span></div>
 </section>
 <section class="card">
-<div class="eyebrow">CURRENT RESULT</div><div id="status" class="status idle">NOT RUN</div><p id="statusDetail" class="tiny">Waiting for operator.</p>
+<div class="eyebrow">OPERATOR STEP</div>
+<p>Tap once and choose one prior StrawDummy or machine-evidence JSON file. The original bytes are hashed before parsing. Nothing inside the file is executed.</p>
+<input id="fileInput" class="hidden" type="file" accept=".json,application/json">
+<div class="row"><button id="runBtn" class="primary wide">CHOOSE EVIDENCE &amp; RUN</button></div>
+<div class="tiny" style="margin-top:9px">One file per run. Run again to append another witness without erasing earlier imports.</div>
 </section>
 <section class="card">
-<div class="eyebrow">EVIDENCE LADDER</div><div class="ladder" style="margin-top:10px">
-<div id="claimStep" class="step untested"><b>CLAIMED</b><span>NOT OBSERVED</span></div>
-<div class="step untested"><b>ADMITTED</b><span>NOT TESTED</span></div><div class="step untested"><b>EXECUTED</b><span>NOT TESTED</span></div>
-<div class="step untested"><b>CORRECT</b><span>NOT TESTED</span></div><div class="step untested"><b>SUSTAINED</b><span>NOT TESTED</span></div><div class="step untested"><b>USEFUL</b><span>NOT TESTED</span></div>
+<div class="eyebrow">CURRENT RESULT</div><div id="status" class="status idle">NOT RUN</div><p id="statusDetail" class="tiny">Waiting for an evidence file.</p>
+</section>
+<section class="card">
+<div class="eyebrow">IMPORT PIPELINE</div><div class="pipeline" style="margin-top:10px">
+<div id="stepRead" class="step idle"><b>FILE READ</b><span>NOT RUN</span></div>
+<div id="stepHash" class="step idle"><b>SHA-256</b><span>NOT RUN</span></div>
+<div id="stepParse" class="step idle"><b>JSON PARSE</b><span>NOT RUN</span></div>
+<div id="stepCompare" class="step idle"><b>FINGERPRINT</b><span>NOT RUN</span></div>
+<div id="stepFacts" class="step idle"><b>FACTS</b><span>NOT RUN</span></div>
+<div id="stepPersist" class="step idle"><b>PERSISTED</b><span>NOT RUN</span></div>
 </div></section>
-<section id="summaryCard" class="card hidden"><div class="eyebrow">BROWSER CLAIMS</div><div id="summary" class="grid" style="margin-top:10px"></div></section>
-<section id="compareCard" class="card hidden"><div class="eyebrow">CLAIMED vs OBSERVED MACHINE</div><table class="compare" style="margin-top:8px"><thead><tr><th>Surface</th><th>Browser claim</th><th>Observed machine</th></tr></thead><tbody id="compareBody"></tbody></table></section>
-<section class="card"><div class="row"><button id="exportBtn">EXPORT EVIDENCE</button><button id="copyBtn">COPY JSON</button><button id="rawBtn">VIEW RAW</button><button id="resetBtn">NEW SESSION</button></div><div id="rawCard" class="hidden"><pre id="rawOut"></pre></div></section>
-<section class="card locked"><b>SLIDE 02 LOCKED</b><br><span class="tiny">Forge the next test only after Slide 01 evidence is in hand.</span></section>
+<section id="summaryCard" class="card hidden"><div class="eyebrow">IMPORT SUMMARY</div><div id="summary" class="grid" style="margin-top:10px"></div></section>
+<section id="fingerprintCard" class="card hidden"><div class="eyebrow">FINGERPRINT COMPARISON</div><p class="tiny">MATCH means the exposed values agree. It does not uniquely identify a physical handset.</p><div class="scroll"><table><thead><tr><th>Axis</th><th>Slide 1 now</th><th>Imported witness</th><th>Result</th></tr></thead><tbody id="fingerprintBody"></tbody></table></div></section>
+<section id="factsCard" class="card hidden"><div class="eyebrow">PRIOR FACT CLASSIFICATION</div><p class="tiny"><span class="known">KNOWN-PRIOR</span> carries explicit structured execution or measurement evidence. <span class="mention">MENTION-ONLY</span> is preserved but cannot unlock later tests.</p><div class="scroll"><table><thead><tr><th>Fact</th><th>Classification</th><th>Evidence path</th></tr></thead><tbody id="factsBody"></tbody></table></div></section>
+<section class="card"><div class="row"><button id="exportBtn">EXPORT EVIDENCE</button><button id="copyBtn">COPY JSON</button><button id="rawBtn">VIEW RAW RESULT</button><button id="resetBtn">NEW SESSION</button></div><div id="rawCard" class="hidden"><pre id="rawOut"></pre></div></section>
+<section class="card locked"><b>SLIDE 03 LOCKED</b><br><span class="tiny">Forge the next test only after Slide 02 evidence is in hand.</span></section>
 </main>
 <script>
-(()=>{'use strict';
-const BUILD='strawdummy-machine-surface-v0.1.0-slide01';
-const SCHEMA='strawdummy/machine-surface-v1';
-const STORE_KEY='strawdummy:machine-surface:v1';
-const SLIDE_ID='01-machine-fingerprint';
-const TOTAL_SLIDES=44;
-const $=id=>document.getElementById(id);
-const now=()=>new Date().toISOString();
-const clone=v=>{try{return JSON.parse(JSON.stringify(v))}catch{return String(v)}};
-const errObj=e=>({name:e?.name||'Error',message:e?.message||String(e)});
-$('buildTag').textContent=BUILD;
+(function () {
+  'use strict';
 
-function fresh(){return{schema:SCHEMA,sessionId:crypto.randomUUID?.()||String(Date.now()),startedAt:now(),lastUpdatedAt:null,suite:{name:'StrawDummy Machine Surface',totalSlides:TOTAL_SLIDES,forgedSlides:1,builds:[BUILD]},origin:location.origin,slides:{},events:[]}}
-function load(){try{const x=JSON.parse(localStorage.getItem(STORE_KEY));if(x?.schema===SCHEMA){x.suite=x.suite||{};x.suite.totalSlides=TOTAL_SLIDES;x.suite.forgedSlides=Math.max(x.suite.forgedSlides||0,1);x.suite.builds=[...new Set([...(x.suite.builds||[]),BUILD])];x.slides=x.slides||{};x.events=x.events||[];return x}}catch{}return fresh()}
-let evidence=load();
-function event(stage,result,data){evidence.events.push({sequence:evidence.events.length,timestamp:now(),slideId:SLIDE_ID,stage,result,...(data===undefined?{}:{data:clone(data)})});save()}
-function save(){evidence.lastUpdatedAt=now();try{localStorage.setItem(STORE_KEY,JSON.stringify(evidence))}catch{};saveIDB().catch(()=>{})}
-async function saveIDB(){if(!('indexedDB' in globalThis))return;const db=await new Promise((res,rej)=>{const r=indexedDB.open('strawdummy-machine-surface',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('sessions'))r.result.createObjectStore('sessions')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});await new Promise((res,rej)=>{const tx=db.transaction('sessions','readwrite');tx.objectStore('sessions').put(evidence,evidence.sessionId);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});db.close()}
-function present(v){if(v===undefined)return 'UNEXPOSED';if(v===null)return 'null';if(typeof v==='boolean')return v?'YES':'NO';if(typeof v==='object')return JSON.stringify(v);return String(v)}
-function exists(name,root=globalThis){try{return name in root}catch{return false}}
-function navExists(name){try{return name in navigator}catch{return false}}
-function storageProbe(){let ls=false;try{const k='__sd_probe__';localStorage.setItem(k,'1');ls=localStorage.getItem(k)==='1';localStorage.removeItem(k)}catch{}return ls}
-async function uaData(){const u=navigator.userAgentData;if(!u)return null;const out={brands:clone(u.brands),mobile:u.mobile,platform:u.platform};if(u.getHighEntropyValues){try{Object.assign(out,await u.getHighEntropyValues(['architecture','bitness','formFactors','fullVersionList','model','platformVersion','uaFullVersion','wow64']))}catch(e){out.highEntropyError=errObj(e)}}return out}
-function apiClaims(){return{
-execution:{Worker:exists('Worker'),SharedWorker:exists('SharedWorker'),WebAssembly:exists('WebAssembly'),SharedArrayBuffer:exists('SharedArrayBuffer'),Atomics:exists('Atomics'),OffscreenCanvas:exists('OffscreenCanvas'),PressureObserver:exists('PressureObserver'),scheduler:exists('scheduler')},
-gpu:{webgpu:navExists('gpu'),WebGL2RenderingContext:exists('WebGL2RenderingContext')},
-media:{mediaDevices:!!navigator.mediaDevices,getUserMedia:!!navigator.mediaDevices?.getUserMedia,MediaStreamTrackProcessor:exists('MediaStreamTrackProcessor'),VideoFrame:exists('VideoFrame'),ImageCapture:exists('ImageCapture'),VideoEncoder:exists('VideoEncoder'),VideoDecoder:exists('VideoDecoder'),AudioEncoder:exists('AudioEncoder'),AudioDecoder:exists('AudioDecoder'),mediaCapabilities:navExists('mediaCapabilities')},
-audio:{AudioContext:exists('AudioContext')||exists('webkitAudioContext'),AudioWorkletNode:exists('AudioWorkletNode')},
-sensors:{Accelerometer:exists('Accelerometer'),LinearAccelerationSensor:exists('LinearAccelerationSensor'),GravitySensor:exists('GravitySensor'),Gyroscope:exists('Gyroscope'),RelativeOrientationSensor:exists('RelativeOrientationSensor'),AbsoluteOrientationSensor:exists('AbsoluteOrientationSensor'),Magnetometer:exists('Magnetometer'),DeviceMotionEvent:exists('DeviceMotionEvent'),DeviceOrientationEvent:exists('DeviceOrientationEvent')},
-mlVision:{webnn:navExists('ml'),BarcodeDetector:exists('BarcodeDetector'),FaceDetector:exists('FaceDetector'),TextDetector:exists('TextDetector')},
-external:{bluetooth:navExists('bluetooth'),usb:navExists('usb'),serial:navExists('serial'),NDEFReader:exists('NDEFReader'),RTCPeerConnection:exists('RTCPeerConnection')},
-storage:{indexedDB:exists('indexedDB'),localStorageWritable:storageProbe(),storageManager:navExists('storage'),OPFS:!!navigator.storage?.getDirectory,persist:!!navigator.storage?.persist,estimate:!!navigator.storage?.estimate},
-power:{getBattery:typeof navigator.getBattery==='function'}
-}}
-async function collect(){const start=performance.now();const mem=performance.memory?{jsHeapSizeLimit:performance.memory.jsHeapSizeLimit,totalJSHeapSize:performance.memory.totalJSHeapSize,usedJSHeapSize:performance.memory.usedJSHeapSize}:null;const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;return{
-collectedAt:now(),elapsedMs:null,
-identity:{userAgent:navigator.userAgent,uaData:await uaData(),language:navigator.language,languages:clone(navigator.languages),platform:navigator.platform,vendor:navigator.vendor,mobile:navigator.userAgentData?.mobile??null,maxTouchPoints:navigator.maxTouchPoints},
-context:{href:location.href,origin:location.origin,protocol:location.protocol,secureContext:isSecureContext,crossOriginIsolated:globalThis.crossOriginIsolated,visibilityState:document.visibilityState,online:navigator.onLine,webdriver:navigator.webdriver??null},
-display:{innerWidth:innerWidth,innerHeight:innerHeight,screenWidth:screen.width,screenHeight:screen.height,availWidth:screen.availWidth,availHeight:screen.availHeight,colorDepth:screen.colorDepth,pixelDepth:screen.pixelDepth,devicePixelRatio:devicePixelRatio,orientation:screen.orientation?{type:screen.orientation.type,angle:screen.orientation.angle}:null},
-claimedCompute:{hardwareConcurrency:navigator.hardwareConcurrency??null,deviceMemory:navigator.deviceMemory??null,cpuPerformance:('cpuPerformance' in navigator)?navigator.cpuPerformance:null,performanceMemory:mem},
-connection:conn?{effectiveType:conn.effectiveType??null,downlink:conn.downlink??null,rtt:conn.rtt??null,saveData:conn.saveData??null,type:conn.type??null}:null,
-apis:apiClaims(),
-elapsedMs:+(performance.now()-start).toFixed(3)
-}}
-function flattenPresence(group){return Object.values(group||{}).filter(v=>v===true).length+'/'+Object.keys(group||{}).length+' surfaced'}
-function render(result){$('summaryCard').classList.remove('hidden');$('compareCard').classList.remove('hidden');const items=[['Secure context',result.context.secureContext],['Cross-origin isolated',result.context.crossOriginIsolated],['hardwareConcurrency',result.claimedCompute.hardwareConcurrency],['deviceMemory',result.claimedCompute.deviceMemory],['CPU performance tier',result.claimedCompute.cpuPerformance],['JS heap limit',result.claimedCompute.performanceMemory?.jsHeapSizeLimit??null],['GPU surfaces',flattenPresence(result.apis.gpu)],['Media surfaces',flattenPresence(result.apis.media)],['Sensor surfaces',flattenPresence(result.apis.sensors)],['ML / vision',flattenPresence(result.apis.mlVision)],['External hardware',flattenPresence(result.apis.external)],['Capture time',result.elapsedMs+' ms']];$('summary').innerHTML=items.map(([k,v])=>`<div class="datum"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(present(v))}</div></div>`).join('');const comp=[['CPU lanes',result.claimedCompute.hardwareConcurrency],['CPU performance',result.claimedCompute.cpuPerformance],['Device memory',result.claimedCompute.deviceMemory],['JS heap limit',result.claimedCompute.performanceMemory?.jsHeapSizeLimit??'UNEXPOSED'],['WebGPU','webgpu' in result.apis.gpu && result.apis.gpu.webgpu?'SURFACED':'NOT SURFACED'],['Camera',result.apis.media.getUserMedia?'SURFACED':'NOT SURFACED'],['WASM',result.apis.execution.WebAssembly?'SURFACED':'NOT SURFACED'],['Sensors',flattenPresence(result.apis.sensors)],['WebNN',result.apis.mlVision.webnn?'SURFACED':'NOT SURFACED']];$('compareBody').innerHTML=comp.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td class="claim">${escapeHtml(present(v))}</td><td class="machine">NOT MEASURED ON SLIDE 01</td></tr>`).join('');$('rawOut').textContent=JSON.stringify(result,null,2)}
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function run(){const btn=$('runBtn');btn.disabled=true;$('repeatBtn').disabled=true;$('status').className='status running';$('status').textContent='OBSERVING';$('statusDetail').textContent='Reading browser-exposed identity and capability claims. No heavy capability is being executed.';event('fingerprint','START');try{const result=await collect();const slide=evidence.slides[SLIDE_ID]||(evidence.slides[SLIDE_ID]={title:'Machine Fingerprint',attempts:[]});slide.attempts.push({attempt:slide.attempts.length+1,status:'OBSERVED',timestamp:now(),result});slide.latest=result;slide.status='OBSERVED';save();event('fingerprint','OBSERVED',{attempt:slide.attempts.length,elapsedMs:result.elapsedMs});render(result);$('status').className='status observed';$('status').textContent='OBSERVED · NOT A PASS';$('statusDetail').textContent='Chrome has testified. Nothing on this slide has been promoted to machine truth.';$('claimStep').className='step claimed';$('claimStep').querySelector('span').textContent='OBSERVED';$('repeatBtn').disabled=false}catch(e){event('fingerprint','FAIL',errObj(e));$('status').className='status fail';$('status').textContent='OBSERVATION FAILED';$('statusDetail').textContent=e?.message||String(e);$('repeatBtn').disabled=false}finally{btn.disabled=false}}
-function exportEvidence(){save();const text=JSON.stringify(evidence,null,2),blob=new Blob([text],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=`strawdummy-machine-${evidence.sessionId}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);event('evidence','EXPORTED',{bytes:blob.size})}
-async function copyEvidence(){const text=JSON.stringify(evidence,null,2);await navigator.clipboard.writeText(text);event('evidence','COPIED',{bytes:new Blob([text]).size})}
-function reset(){if(!confirm('Start a new StrawDummy machine session? Current exported files are unaffected.'))return;try{localStorage.removeItem(STORE_KEY)}catch{};location.reload()}
-$('runBtn').onclick=run;$('repeatBtn').onclick=run;$('exportBtn').onclick=exportEvidence;$('copyBtn').onclick=()=>copyEvidence().catch(e=>event('evidence','COPY_FAIL',errObj(e)));$('rawBtn').onclick=()=>{$('rawCard').classList.toggle('hidden')};$('resetBtn').onclick=reset;
-const prior=evidence.slides?.[SLIDE_ID]?.latest;if(prior){render(prior);$('status').className='status observed';$('status').textContent='PRIOR OBSERVATION LOADED';$('statusDetail').textContent='Repeat the slide to append a new observation; prior evidence is preserved.';$('claimStep').className='step claimed';$('claimStep').querySelector('span').textContent='OBSERVED';$('repeatBtn').disabled=false}
-event('page','LOADED',{build:BUILD,href:location.href});save();
+  var BUILD = 'strawdummy-machine-surface-v0.2.0-slide02';
+  var SCHEMA = 'strawdummy/machine-surface-v1';
+  var STORE_KEY = 'strawdummy:machine-surface:v1';
+  var SLIDE_ID = '02-previous-evidence-import';
+  var SLIDE1_ID = '01-machine-fingerprint';
+  var TOTAL_SLIDES = 44;
+  var DB_NAME = 'strawdummy-machine-surface';
+  var DB_VERSION = 2;
+  var MAX_FILE_BYTES = 64 * 1024 * 1024;
+  var runtimeImports = new Map();
+  var $ = function (id) { return document.getElementById(id); };
+  var now = function () { return new Date().toISOString(); };
+  var clone = function (value) {
+    try { return JSON.parse(JSON.stringify(value)); }
+    catch (error) { return String(value); }
+  };
+  var errObj = function (error) {
+    return { name: error && error.name || 'Error', message: error && error.message || String(error) };
+  };
+
+  $('buildTag').textContent = BUILD;
+
+  function fresh() {
+    return {
+      schema: SCHEMA,
+      sessionId: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      startedAt: now(),
+      lastUpdatedAt: null,
+      suite: { name: 'StrawDummy Machine Surface', totalSlides: TOTAL_SLIDES, forgedSlides: 2, builds: [BUILD] },
+      origin: location.origin,
+      slides: {},
+      knownPriorFacts: {},
+      priorEvidence: {},
+      events: []
+    };
+  }
+
+  function load() {
+    try {
+      var value = JSON.parse(localStorage.getItem(STORE_KEY));
+      if (value && value.schema === SCHEMA) {
+        value.suite = value.suite || {};
+        value.suite.totalSlides = TOTAL_SLIDES;
+        value.suite.forgedSlides = Math.max(value.suite.forgedSlides || 0, 2);
+        value.suite.builds = Array.from(new Set((value.suite.builds || []).concat([BUILD])));
+        value.slides = value.slides || {};
+        value.knownPriorFacts = value.knownPriorFacts || {};
+        value.priorEvidence = value.priorEvidence || {};
+        value.events = value.events || [];
+        return value;
+      }
+    } catch (error) {}
+    return fresh();
+  }
+
+  var evidence = load();
+
+  function openDB() {
+    return new Promise(function (resolve, reject) {
+      if (!('indexedDB' in globalThis)) {
+        reject(new Error('IndexedDB not surfaced'));
+        return;
+      }
+      var request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = function () {
+        var db = request.result;
+        if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions');
+        if (!db.objectStoreNames.contains('imports')) db.createObjectStore('imports');
+      };
+      request.onsuccess = function () { resolve(request.result); };
+      request.onerror = function () { reject(request.error || new Error('IndexedDB open failed')); };
+    });
+  }
+
+  async function saveIDB() {
+    var db = await openDB();
+    await new Promise(function (resolve, reject) {
+      var transaction = db.transaction('sessions', 'readwrite');
+      transaction.objectStore('sessions').put(evidence, evidence.sessionId);
+      transaction.oncomplete = resolve;
+      transaction.onerror = function () { reject(transaction.error); };
+    });
+    db.close();
+  }
+
+  async function persistImport(record, rawText) {
+    var artifact = { record: record, rawText: rawText };
+    runtimeImports.set(record.digest, artifact);
+    var db = await openDB();
+    await new Promise(function (resolve, reject) {
+      var transaction = db.transaction('imports', 'readwrite');
+      transaction.objectStore('imports').put(artifact, record.digest);
+      transaction.oncomplete = resolve;
+      transaction.onerror = function () { reject(transaction.error); };
+    });
+    db.close();
+    return 'INDEXEDDB';
+  }
+
+  async function getImport(digest) {
+    if (runtimeImports.has(digest)) return runtimeImports.get(digest);
+    try {
+      var db = await openDB();
+      var artifact = await new Promise(function (resolve, reject) {
+        var transaction = db.transaction('imports', 'readonly');
+        var request = transaction.objectStore('imports').get(digest);
+        request.onsuccess = function () { resolve(request.result || null); };
+        request.onerror = function () { reject(request.error); };
+      });
+      db.close();
+      return artifact;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function save() {
+    evidence.lastUpdatedAt = now();
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(evidence)); }
+    catch (error) {}
+    saveIDB().catch(function () {});
+  }
+
+  function event(stage, result, data) {
+    var item = { sequence: evidence.events.length, timestamp: now(), slideId: SLIDE_ID, stage: stage, result: result };
+    if (data !== undefined) item.data = clone(data);
+    evidence.events.push(item);
+    save();
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (character) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character];
+    });
+  }
+
+  function scalar(value) {
+    if (value === null) return 'null';
+    if (value === undefined) return 'UNEXPOSED';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  }
+
+  function short(value, length) {
+    var text = scalar(value);
+    var limit = length || 180;
+    return text.length > limit ? text.slice(0, limit - 1) + '…' : text;
+  }
+
+  function setStep(id, state, label) {
+    var element = $(id);
+    element.className = 'step ' + state;
+    element.querySelector('span').textContent = label;
+  }
+
+  function resetSteps() {
+    ['stepRead', 'stepHash', 'stepParse', 'stepCompare', 'stepFacts', 'stepPersist'].forEach(function (id) {
+      setStep(id, 'idle', 'NOT RUN');
+    });
+  }
+
+  function flatten(value, path, output, depth) {
+    output = output || [];
+    depth = depth || 0;
+    if (output.length >= 30000) return output;
+    if (depth > 24) {
+      output.push({ path: path, value: '[DEPTH LIMIT]' });
+      return output;
+    }
+    if (value === null || typeof value !== 'object') {
+      output.push({ path: path, value: value });
+      return output;
+    }
+    if (Array.isArray(value)) {
+      for (var index = 0; index < value.length && output.length < 30000; index += 1) {
+        flatten(value[index], path + '[' + index + ']', output, depth + 1);
+      }
+      return output;
+    }
+    Object.keys(value).forEach(function (key) {
+      if (output.length < 30000) flatten(value[key], path + '.' + key, output, depth + 1);
+    });
+    return output;
+  }
+
+  function matchingLeaves(leaves, expression) {
+    return leaves.filter(function (leaf) { return expression.test(leaf.path + ' ' + scalar(leaf.value)); });
+  }
+
+  function parentPath(path, levels) {
+    var result = path;
+    for (var index = 0; index < (levels || 1); index += 1) {
+      var dot = result.lastIndexOf('.');
+      var bracket = result.lastIndexOf('[');
+      var cut = Math.max(dot, bracket);
+      if (cut <= 0) break;
+      result = result.slice(0, cut);
+    }
+    return result;
+  }
+
+  function neighbors(leaves, anchor) {
+    var immediate = parentPath(anchor.path, 1);
+    var family = parentPath(anchor.path, 2);
+    return leaves.filter(function (leaf) {
+      return leaf.path.indexOf(immediate) === 0 || leaf.path.indexOf(family) === 0;
+    }).slice(0, 160);
+  }
+
+  function isPositive(leaf) {
+    var path = leaf.path.toLowerCase();
+    var value = scalar(leaf.value).toLowerCase();
+    var statusKey = /status|result|verdict|outcome|state|execut|correct|admit|pass|success|characterized|observed|proven|validated/;
+    var positiveValue = /pass|executed|correct|admitted|success|characterized|observed|proven|validated|true|ok/;
+    if (statusKey.test(path) && positiveValue.test(value)) return true;
+    if (/dispatch|frame|sample|iteration|invocation|count|bytesprocessed/.test(path) && typeof leaf.value === 'number' && leaf.value > 0) return true;
+    return false;
+  }
+
+  function numericValue(leaf) {
+    if (typeof leaf.value === 'number') return leaf.value;
+    var match = scalar(leaf.value).replace(/,/g, '').match(/([0-9]+(?:\.[0-9]+)?)\s*(gib|mib|kib|gb|mb|kb|bytes?)?/i);
+    if (!match) return null;
+    var value = Number(match[1]);
+    var unit = (match[2] || '').toLowerCase();
+    if (unit === 'gib') value *= 1073741824;
+    if (unit === 'mib') value *= 1048576;
+    if (unit === 'kib') value *= 1024;
+    if (unit === 'gb') value *= 1000000000;
+    if (unit === 'mb') value *= 1000000;
+    if (unit === 'kb') value *= 1000;
+    return value;
+  }
+
+  function basis(leaves, anchors, intrinsicProof) {
+    for (var index = 0; index < anchors.length; index += 1) {
+      var anchor = anchors[index];
+      var family = neighbors(leaves, anchor);
+      if ((intrinsicProof && intrinsicProof(anchor, family)) || isPositive(anchor) || family.some(isPositive)) {
+        return { strong: true, path: anchor.path, sample: short(anchor.value) };
+      }
+    }
+    if (anchors.length) return { strong: false, path: anchors[0].path, sample: short(anchors[0].value) };
+    return { strong: false, path: null, sample: null };
+  }
+
+  var FACTS = [
+    {
+      id: 'gpu-mali-g715', label: 'Mali-G715 GPU identity',
+      inspect: function (leaves) {
+        var anchors = matchingLeaves(leaves, /mali[\s_-]*g715/i);
+        return basis(leaves, anchors, function (anchor) {
+          return /gpu|adapter|renderer|device|identity|description|architecture/i.test(anchor.path) && !/expected|target|example/i.test(anchor.path);
+        });
+      }
+    },
+    {
+      id: 'angle-vulkan', label: 'ANGLE / Vulkan backend',
+      inspect: function (leaves) {
+        var anchors = matchingLeaves(leaves, /vulkan/i);
+        return basis(leaves, anchors, function (anchor, family) {
+          var context = (anchor.path + ' ' + scalar(anchor.value) + ' ' + family.map(function (leaf) { return leaf.path + ' ' + scalar(leaf.value); }).join(' ')).toLowerCase();
+          return /renderer|backend|graphicsbackend|angle_vulkan/.test(context) && !/expected|target|example|commandline|flag/.test(anchor.path.toLowerCase());
+        });
+      }
+    },
+    {
+      id: 'webgpu-executed', label: 'WebGPU dispatch executed',
+      inspect: function (leaves) {
+        return basis(leaves, matchingLeaves(leaves, /webgpu|gpu.*dispatch|dispatch.*gpu/i));
+      }
+    },
+    {
+      id: 'wgsl-executed', label: 'WGSL compute executed',
+      inspect: function (leaves) {
+        return basis(leaves, matchingLeaves(leaves, /wgsl|shader.*compute|compute.*shader/i));
+      }
+    },
+    {
+      id: 'wasm-gpu-wasm', label: 'WASM → GPU → WASM chain executed',
+      inspect: function (leaves) {
+        return basis(leaves, matchingLeaves(leaves, /wasm.*gpu.*wasm|opfs.*wasm.*gpu|gpu.*wasm.*post/i));
+      }
+    },
+    {
+      id: 'workgroup-1024', label: '1024-wide compute executed',
+      inspect: function (leaves) {
+        var anchors = leaves.filter(function (leaf) {
+          var value = numericValue(leaf);
+          return value !== null && value >= 1024 && /workgroup|invocationsperworkgroup|local_size|dispatchwidth/i.test(leaf.path + ' ' + scalar(leaf.value));
+        });
+        return basis(leaves, anchors);
+      }
+    },
+    {
+      id: 'workgroup-storage-32k', label: '32 KiB workgroup storage executed',
+      inspect: function (leaves) {
+        var anchors = leaves.filter(function (leaf) {
+          var value = numericValue(leaf);
+          return value !== null && value >= 32768 && /workgroup.*storage|storage.*workgroup/i.test(leaf.path + ' ' + scalar(leaf.value));
+        });
+        return basis(leaves, anchors);
+      }
+    },
+    {
+      id: 'storage-binding-over-128m', label: 'Storage binding above 128 MiB executed',
+      inspect: function (leaves) {
+        var anchors = leaves.filter(function (leaf) {
+          var value = numericValue(leaf);
+          return value !== null && value > 134217728 && /storage.*binding|binding.*storage|maxstoragebufferbinding/i.test(leaf.path + ' ' + scalar(leaf.value));
+        });
+        return basis(leaves, anchors);
+      }
+    },
+    {
+      id: 'timestamp-query', label: 'GPU timestamp query executed',
+      inspect: function (leaves) {
+        return basis(leaves, matchingLeaves(leaves, /timestamp[-_ ]?query|gputimestamp/i));
+      }
+    },
+    {
+      id: 'camera-admitted', label: 'Camera admitted',
+      inspect: function (leaves) {
+        var anchors = matchingLeaves(leaves, /camera|usermedia|videotrack|tracksettings/i);
+        return basis(leaves, anchors, function (anchor, family) {
+          return family.some(function (leaf) { return /width|height|framerate|frames|settings/i.test(leaf.path) && leaf.value !== null && leaf.value !== false; });
+        });
+      }
+    },
+    {
+      id: 'opfs-executed', label: 'OPFS operation executed',
+      inspect: function (leaves) {
+        var anchors = matchingLeaves(leaves, /opfs|getdirectory|syncaccesshandle/i);
+        return basis(leaves, anchors, function (anchor, family) {
+          return family.some(function (leaf) {
+            return /read|write|hash|bytes|persist/i.test(leaf.path) && ((typeof leaf.value === 'number' && leaf.value > 0) || /pass|success|true|verified/i.test(scalar(leaf.value)));
+          });
+        });
+      }
+    }
+  ];
+
+  function classifyFacts(root) {
+    var leaves = flatten(root, '$');
+    var facts = FACTS.map(function (definition) {
+      var found = definition.inspect(leaves);
+      var classification = found.path ? (found.strong ? 'KNOWN-PRIOR' : 'MENTION-ONLY') : 'NOT-FOUND';
+      return {
+        factId: definition.id,
+        label: definition.label,
+        classification: classification,
+        evidencePath: found.path,
+        evidenceSample: found.sample,
+        basis: classification === 'KNOWN-PRIOR' ? 'Structured execution or measurement evidence found near this path.' : classification === 'MENTION-ONLY' ? 'Term found without sufficient execution evidence; quarantined.' : 'No matching evidence found.'
+      };
+    });
+    return { leafCount: leaves.length, truncated: leaves.length >= 30000, facts: facts };
+  }
+
+  function findValue(leaves, patterns, validator) {
+    for (var patternIndex = 0; patternIndex < patterns.length; patternIndex += 1) {
+      for (var leafIndex = 0; leafIndex < leaves.length; leafIndex += 1) {
+        var leaf = leaves[leafIndex];
+        if (patterns[patternIndex].test(leaf.path) && (!validator || validator(leaf.value))) return leaf.value;
+      }
+    }
+    return null;
+  }
+
+  function chromeMajor(userAgent) {
+    var match = String(userAgent || '').match(/(?:Chrome|CriOS)\/(\d+)/i);
+    return match ? Number(match[1]) : null;
+  }
+
+  function androidVersion(userAgent) {
+    var match = String(userAgent || '').match(/Android\s+([0-9.]+)/i);
+    return match ? match[1] : null;
+  }
+
+  function androidBuild(userAgent) {
+    var match = String(userAgent || '').match(/Build\/([^;)\s]+)/i);
+    return match ? match[1] : null;
+  }
+
+  function extractFingerprint(root) {
+    var leaves = flatten(root, '$');
+    var userAgent = findValue(leaves, [/\.identity\.userAgent$/i, /\.userAgent$/i], function (value) { return typeof value === 'string' && /mozilla|chrome|android/i.test(value); });
+    var model = findValue(leaves, [/\.uaData\.model$/i, /\.deviceModel$/i, /\.device\.model$/i], function (value) { return typeof value === 'string' && value.length > 1 && value.length < 100; });
+    var platformVersion = findValue(leaves, [/\.uaData\.platformVersion$/i, /\.platformVersion$/i, /\.androidVersion$/i, /\.osVersion$/i]);
+    var build = findValue(leaves, [/\.androidBuild$/i, /\.osBuild$/i, /\.buildFingerprint$/i]);
+    var gpuLeaf = matchingLeaves(leaves, /mali[\s_-]*g715/i)[0];
+    return {
+      model: model || null,
+      chromeMajor: chromeMajor(userAgent),
+      androidVersion: platformVersion || androidVersion(userAgent),
+      androidBuild: build || androidBuild(userAgent),
+      gpuIdentity: gpuLeaf ? short(gpuLeaf.value, 100) : null,
+      userAgent: userAgent || null,
+      origin: findValue(leaves, [/\.context\.origin$/i, /\.origin$/i]),
+      schema: root && root.schema || null
+    };
+  }
+
+  function slide1Fingerprint() {
+    var slide = evidence.slides && evidence.slides[SLIDE1_ID];
+    var result = slide && slide.latest;
+    if (!result) return null;
+    var userAgent = result.identity && result.identity.userAgent;
+    return {
+      model: result.identity && result.identity.uaData && result.identity.uaData.model || null,
+      chromeMajor: chromeMajor(userAgent),
+      androidVersion: result.identity && result.identity.uaData && result.identity.uaData.platformVersion || androidVersion(userAgent),
+      androidBuild: androidBuild(userAgent),
+      gpuIdentity: null,
+      userAgent: userAgent || null,
+      origin: result.context && result.context.origin || evidence.origin || null
+    };
+  }
+
+  function normalized(value) {
+    return value === null || value === undefined || value === '' ? null : String(value).trim().toLowerCase();
+  }
+
+  function compareAxis(axis, current, imported) {
+    var left = normalized(current);
+    var right = normalized(imported);
+    return { axis: axis, current: current, imported: imported, result: !left || !right ? 'UNKNOWN' : left === right ? 'MATCH' : 'DIFFERENT' };
+  }
+
+  function compareFingerprints(current, imported) {
+    var rows = [
+      compareAxis('Device model', current && current.model, imported.model),
+      compareAxis('Chrome major', current && current.chromeMajor, imported.chromeMajor),
+      compareAxis('Android platform', current && current.androidVersion, imported.androidVersion),
+      compareAxis('Android build', current && current.androidBuild, imported.androidBuild),
+      compareAxis('GPU identity', current && current.gpuIdentity, imported.gpuIdentity),
+      compareAxis('Origin', current && current.origin, imported.origin)
+    ];
+    var model = rows[0];
+    var android = rows[2];
+    var consistency = model.result === 'DIFFERENT' || android.result === 'DIFFERENT' ? 'CONTRADICTED' : model.result === 'MATCH' && android.result === 'MATCH' ? 'CONSISTENT' : 'INSUFFICIENT';
+    return { rows: rows, deviceConsistency: consistency, note: 'CONSISTENT is not unique physical-device proof.' };
+  }
+
+  async function digestBuffer(buffer) {
+    var digest = await crypto.subtle.digest('SHA-256', buffer);
+    return Array.from(new Uint8Array(digest)).map(function (value) { return value.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  function describeRoot(root) {
+    return {
+      rootType: Array.isArray(root) ? 'array' : root === null ? 'null' : typeof root,
+      schema: root && root.schema || null,
+      app: root && (root.app || root.suite && root.suite.name) || null,
+      createdAt: root && (root.createdAt || root.startedAt || root.savedAt) || null
+    };
+  }
+
+  function mergeKnownFacts(record) {
+    record.facts.forEach(function (fact) {
+      if (fact.classification !== 'KNOWN-PRIOR') return;
+      var inherited = evidence.knownPriorFacts[fact.factId] || { factId: fact.factId, label: fact.label, status: 'KNOWN-PRIOR', sources: [] };
+      if (inherited.sources.indexOf(record.digest) === -1) inherited.sources.push(record.digest);
+      evidence.knownPriorFacts[fact.factId] = inherited;
+    });
+  }
+
+  async function processFile(file) {
+    resetSteps();
+    $('runBtn').disabled = true;
+    $('status').className = 'status running';
+    $('status').textContent = 'IMPORTING';
+    $('statusDetail').textContent = 'Reading and hashing the selected bytes. Nothing in the file will execute.';
+    event('import', 'START', { name: file.name, size: file.size, type: file.type, lastModified: file.lastModified });
+    try {
+      if (file.size > MAX_FILE_BYTES) throw new Error('File is ' + file.size + ' bytes; Slide 2 safety limit is ' + MAX_FILE_BYTES + ' bytes.');
+      var buffer = await file.arrayBuffer();
+      setStep('stepRead', 'pass', file.size + ' BYTES');
+      var digest = await digestBuffer(buffer);
+      setStep('stepHash', 'pass', digest.slice(0, 12));
+      var rawText = new TextDecoder().decode(buffer);
+      var root;
+      try {
+        root = JSON.parse(rawText);
+      } catch (parseError) {
+        setStep('stepParse', 'warn', 'INVALID JSON');
+        throw new Error('JSON parse failed: ' + parseError.message);
+      }
+      setStep('stepParse', 'pass', 'PARSED');
+      var importedFingerprint = extractFingerprint(root);
+      var currentFingerprint = slide1Fingerprint();
+      var comparison = compareFingerprints(currentFingerprint, importedFingerprint);
+      setStep('stepCompare', currentFingerprint ? 'pass' : 'warn', currentFingerprint ? comparison.deviceConsistency : 'SLIDE 1 MISSING');
+      var classified = classifyFacts(root);
+      var known = classified.facts.filter(function (fact) { return fact.classification === 'KNOWN-PRIOR'; }).length;
+      var mentions = classified.facts.filter(function (fact) { return fact.classification === 'MENTION-ONLY'; }).length;
+      setStep('stepFacts', known ? 'pass' : 'warn', known + ' KNOWN · ' + mentions + ' HELD');
+      var record = {
+        digest: digest,
+        hashAlgorithm: 'SHA-256',
+        filename: file.name,
+        bytes: file.size,
+        mimeType: file.type || null,
+        fileLastModified: file.lastModified || null,
+        importedAt: now(),
+        source: describeRoot(root),
+        importedFingerprint: importedFingerprint,
+        fingerprintComparison: comparison,
+        leafCount: classified.leafCount,
+        scanTruncated: classified.truncated,
+        facts: classified.facts,
+        knownPriorCount: known,
+        mentionOnlyCount: mentions
+      };
+      var persistence = 'MEMORY-ONLY';
+      try {
+        persistence = await persistImport(record, rawText);
+        setStep('stepPersist', 'pass', persistence);
+      } catch (persistenceError) {
+        runtimeImports.set(digest, { record: record, rawText: rawText });
+        record.persistenceError = errObj(persistenceError);
+        setStep('stepPersist', 'warn', 'MEMORY-ONLY');
+      }
+      record.persistence = persistence;
+      evidence.priorEvidence[digest] = { digest: digest, filename: file.name, bytes: file.size, importedAt: record.importedAt, source: record.source, knownPriorCount: known, mentionOnlyCount: mentions, persistence: persistence };
+      mergeKnownFacts(record);
+      var slide = evidence.slides[SLIDE_ID] || (evidence.slides[SLIDE_ID] = { title: 'Previous Evidence Import', attempts: [] });
+      var attempt = { attempt: slide.attempts.length + 1, status: known ? 'KNOWN-PRIOR ESTABLISHED' : 'IMPORTED · NO FACT PROMOTION', timestamp: now(), result: record };
+      slide.attempts.push(attempt);
+      slide.latest = record;
+      slide.status = attempt.status;
+      save();
+      event('import', known ? 'KNOWN_PRIOR' : 'PARSED_ONLY', { digest: digest, knownPriorCount: known, mentionOnlyCount: mentions, persistence: persistence });
+      render(record);
+      $('status').className = known ? 'status observed' : 'status partial';
+      $('status').textContent = known ? 'KNOWN-PRIOR ESTABLISHED' : 'IMPORTED · NO FACTS PROMOTED';
+      $('statusDetail').textContent = known ? known + ' earlier machine facts carry explicit evidence. ' + mentions + ' weaker mentions remain quarantined.' : 'The file is preserved, but it did not contain sufficiently explicit execution evidence for the recognized facts.';
+    } catch (error) {
+      event('import', 'FAIL', errObj(error));
+      $('status').className = 'status fail';
+      $('status').textContent = 'IMPORT FAILED';
+      $('statusDetail').textContent = error.message || String(error);
+    } finally {
+      $('runBtn').disabled = false;
+      $('fileInput').value = '';
+    }
+  }
+
+  function present(value) {
+    return value === null || value === undefined || value === '' ? 'UNAVAILABLE' : String(value);
+  }
+
+  function render(record) {
+    $('summaryCard').classList.remove('hidden');
+    $('fingerprintCard').classList.remove('hidden');
+    $('factsCard').classList.remove('hidden');
+    var items = [
+      ['File', record.filename],
+      ['Bytes', record.bytes],
+      ['SHA-256', record.digest],
+      ['Source schema', record.source.schema || 'UNDECLARED'],
+      ['Scanned leaves', record.leafCount + (record.scanTruncated ? ' · LIMIT REACHED' : '')],
+      ['KNOWN-PRIOR', record.knownPriorCount],
+      ['MENTION-ONLY', record.mentionOnlyCount],
+      ['Device consistency', record.fingerprintComparison.deviceConsistency],
+      ['Raw artifact', record.persistence]
+    ];
+    $('summary').innerHTML = items.map(function (item) {
+      return '<div class="datum"><div class="k">' + escapeHtml(item[0]) + '</div><div class="v">' + escapeHtml(present(item[1])) + '</div></div>';
+    }).join('');
+    $('fingerprintBody').innerHTML = record.fingerprintComparison.rows.map(function (row) {
+      var style = row.result === 'MATCH' ? 'match' : row.result === 'DIFFERENT' ? 'different' : 'unknown';
+      return '<tr><td>' + escapeHtml(row.axis) + '</td><td>' + escapeHtml(present(row.current)) + '</td><td>' + escapeHtml(present(row.imported)) + '</td><td class="' + style + '">' + escapeHtml(row.result) + '</td></tr>';
+    }).join('');
+    $('factsBody').innerHTML = record.facts.map(function (fact) {
+      var style = fact.classification === 'KNOWN-PRIOR' ? 'known' : fact.classification === 'MENTION-ONLY' ? 'mention' : 'absent';
+      return '<tr><td>' + escapeHtml(fact.label) + '</td><td class="' + style + '">' + escapeHtml(fact.classification) + '</td><td class="path">' + escapeHtml(fact.evidencePath || '—') + '</td></tr>';
+    }).join('');
+    $('rawOut').textContent = JSON.stringify(record, null, 2);
+  }
+
+  async function buildExport() {
+    var output = clone(evidence);
+    output.exportedAt = now();
+    output.importedArtifacts = [];
+    var digests = Object.keys(evidence.priorEvidence || {});
+    for (var index = 0; index < digests.length; index += 1) {
+      var artifact = await getImport(digests[index]);
+      output.importedArtifacts.push(artifact ? { digest: digests[index], filename: artifact.record.filename, rawText: artifact.rawText } : { digest: digests[index], missing: true });
+    }
+    return output;
+  }
+
+  async function exportEvidence() {
+    var output = await buildExport();
+    var text = JSON.stringify(output, null, 2);
+    var blob = new Blob([text], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'strawdummy-machine-' + evidence.sessionId + '-through-slide02.json';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    event('evidence', 'EXPORTED', { bytes: blob.size, imports: output.importedArtifacts.length });
+  }
+
+  async function copyEvidence() {
+    var output = await buildExport();
+    var text = JSON.stringify(output, null, 2);
+    await navigator.clipboard.writeText(text);
+    event('evidence', 'COPIED', { bytes: new Blob([text]).size, imports: output.importedArtifacts.length });
+  }
+
+  function reset() {
+    if (!confirm('Start a new StrawDummy machine session? Exported files and content-addressed imported artifacts are unaffected.')) return;
+    try { localStorage.removeItem(STORE_KEY); }
+    catch (error) {}
+    location.reload();
+  }
+
+  function chooseFile() {
+    $('fileInput').value = '';
+    $('fileInput').click();
+  }
+
+  function renderPrerequisite() {
+    var slide = evidence.slides && evidence.slides[SLIDE1_ID];
+    if (slide && slide.latest) {
+      $('slide1Pill').className = 'pill yes';
+      $('slide1Pill').textContent = 'FOUND';
+      $('slide1Detail').textContent = 'Slide 1 observation loaded from this GitHack origin. Fingerprint comparison is available.';
+    } else {
+      $('slide1Pill').className = 'pill no';
+      $('slide1Pill').textContent = 'MISSING';
+      $('slide1Detail').textContent = 'No Slide 1 observation was found on this origin. Import still works; current-device comparisons will remain UNKNOWN.';
+    }
+  }
+
+  $('runBtn').onclick = chooseFile;
+  $('fileInput').onchange = function () {
+    var file = this.files && this.files[0];
+    if (file) processFile(file);
+  };
+  $('exportBtn').onclick = function () {
+    exportEvidence().catch(function (error) {
+      event('evidence', 'EXPORT_FAIL', errObj(error));
+      $('statusDetail').textContent = 'Export failed: ' + error.message;
+    });
+  };
+  $('copyBtn').onclick = function () {
+    copyEvidence().then(function () {
+      $('statusDetail').textContent = 'Evidence JSON copied.';
+    }).catch(function (error) {
+      event('evidence', 'COPY_FAIL', errObj(error));
+      $('statusDetail').textContent = 'Copy failed: ' + error.message;
+    });
+  };
+  $('rawBtn').onclick = function () { $('rawCard').classList.toggle('hidden'); };
+  $('resetBtn').onclick = reset;
+
+  renderPrerequisite();
+  var prior = evidence.slides && evidence.slides[SLIDE_ID] && evidence.slides[SLIDE_ID].latest;
+  if (prior) {
+    render(prior);
+    $('status').className = prior.knownPriorCount ? 'status observed' : 'status partial';
+    $('status').textContent = prior.knownPriorCount ? 'PRIOR IMPORT LOADED' : 'PRIOR PARSED IMPORT LOADED';
+    $('statusDetail').textContent = 'Run again to append another evidence witness; the prior import remains preserved.';
+    setStep('stepRead', 'pass', prior.bytes + ' BYTES');
+    setStep('stepHash', 'pass', prior.digest.slice(0, 12));
+    setStep('stepParse', 'pass', 'PARSED');
+    setStep('stepCompare', slide1Fingerprint() ? 'pass' : 'warn', prior.fingerprintComparison.deviceConsistency);
+    setStep('stepFacts', prior.knownPriorCount ? 'pass' : 'warn', prior.knownPriorCount + ' KNOWN · ' + prior.mentionOnlyCount + ' HELD');
+    setStep('stepPersist', prior.persistence === 'INDEXEDDB' ? 'pass' : 'warn', prior.persistence);
+  }
+  event('page', 'LOADED', { build: BUILD, href: location.href });
+  save();
 })();
 </script>
-</body></html>
+</body>
+</html>
