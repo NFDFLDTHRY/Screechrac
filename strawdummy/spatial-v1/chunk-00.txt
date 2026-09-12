@@ -1,0 +1,41 @@
+
+(() => {
+'use strict';
+
+const BUILD = 'strawdummy-spatial-primitives-v1.0.0';
+const SCHEMA = 'strawdummy/spatial-capabilities-v1';
+const KEY = 'strawdummy:spatial-capabilities:v1';
+const video = document.getElementById('video');
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const nowISO = () => new Date().toISOString();
+const perf = () => performance.now();
+const compactError = e => ({name:e?.name||'Error',message:e?.message||String(e),stack:e?.stack?.split('\n').slice(0,3).join('\n')||null});
+const cloneable = value => { try { return JSON.parse(JSON.stringify(value)); } catch { return String(value); } };
+
+const state = {
+  index: 0,
+  stream: null,
+  track: null,
+  rawOpen: false,
+  activeCleanup: [],
+  currentTerminal: false,
+  session: load() || {
+    schema: SCHEMA, build: BUILD, sessionId: crypto.randomUUID?.() || String(Date.now()),
+    startedAt: nowISO(), location: location.href, environment: {}, slides: {}, events: []
+  }
+};
+
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(state.session));}catch(_){} renderSession(); }
+function load(){ try{return JSON.parse(localStorage.getItem(KEY)||'null');}catch{return null;} }
+function emit(stage,result,data=null){const ev={seq:state.session.events.length,t:nowISO(),pageTimeMs:+perf().toFixed(3),stage,result};if(data!==null)ev.data=cloneable(data);state.session.events.push(ev);save();return ev;}
+function addAttempt(slideId, attempt){ if(!state.session.slides[slideId]) state.session.slides[slideId]={attempts:[],acceptedAttempt:null}; state.session.slides[slideId].attempts.push(attempt); save(); }
+function acceptCurrent(){const s=SLIDES[state.index];const entry=state.session.slides[s.id];if(!entry?.attempts?.length)return;entry.acceptedAttempt=entry.attempts.length-1;entry.savedAt=nowISO();save();}
+function accepted(slideId){const e=state.session.slides[slideId];return e && Number.isInteger(e.acceptedAttempt) ? e.attempts[e.acceptedAttempt] : null;}
+function terminalVerdict(v){return ['CHARACTERIZED','RESPONSIVE','EMITTING','STARTED','CONSTRUCTED','EXPOSED','PASS','PARTIAL','BLOCKED','ABSENT','FAIL'].includes(v);}
+function cleanupActive(){for(const fn of state.activeCleanup.splice(0)){try{fn();}catch(_){}}}
+function registerCleanup(fn){state.activeCleanup.push(fn);}
+
+function objectShape(obj){
+  if(!obj) return null;
+  const own = (()=>{try{retu
