@@ -1537,7 +1537,8 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   R.gpuLimits = async ctx => {
     if (!navigator.gpu) return missing(ctx, 'WebGPU limits');
-    const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' }); if (!adapter) return missing(ctx, 'GPUAdapter');
+    const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+    if (!adapter) return ctx.result('BLOCKED', 'navigator.gpu is exposed, but no GPUAdapter was admitted.', { browserClaims: { navigatorGPU: true }, observations: { adapter: null } }, { claimed: 'OBSERVED', admitted: 'FAIL' });
     const advertised = H.adapterSnapshot(adapter), safetyCap = 384 * 1048576;
     const requestedBinding = Math.min(safetyCap, Number(adapter.limits.maxStorageBufferBindingSize || 0), Number(adapter.limits.maxBufferSize || 0));
     const requiredLimits = {};
@@ -1587,7 +1588,8 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   R.gpuFeatures = async ctx => {
     if (!navigator.gpu) return missing(ctx, 'WebGPU features');
-    const adapter = await navigator.gpu.requestAdapter(); if (!adapter) return missing(ctx, 'GPUAdapter');
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return ctx.result('BLOCKED', 'navigator.gpu is exposed, but no GPUAdapter was admitted.', { browserClaims: { navigatorGPU: true }, observations: { adapter: null } }, { claimed: 'OBSERVED', admitted: 'FAIL' });
     const advertised = H.adapterSnapshot(adapter), wantedFeatures = ['shader-f16', 'subgroups', 'timestamp-query'].filter(feature => adapter.features.has(feature));
     const requiredLimits = {};
     for (const name of ['maxComputeInvocationsPerWorkgroup', 'maxComputeWorkgroupSizeX', 'maxComputeWorkgroupStorageSize']) if (adapter.limits[name] !== undefined) requiredLimits[name] = adapter.limits[name];
@@ -1629,7 +1631,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     ctx.phase('Giving a DedicatedWorker full GPU ownership', 'Adapter, device, WGSL, dispatch, mapping, and verification all occur in the worker.', .15);
     const source = `onmessage=async()=>{const fail=e=>postMessage({error:{name:e.name||'Error',message:e.message||String(e)}});try{if(!navigator.gpu)throw new Error('worker navigator.gpu absent');const a=await navigator.gpu.requestAdapter();if(!a)throw new Error('no adapter');const d=await a.requestDevice(),input=new Uint32Array([1,2,3,4]),ib=d.createBuffer({size:16,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST}),ob=d.createBuffer({size:16,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC}),rb=d.createBuffer({size:16,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ}),m=d.createShaderModule({code:'@group(0) @binding(0) var<storage,read> a:array<u32>;@group(0) @binding(1) var<storage,read_write> b:array<u32>;@compute @workgroup_size(4) fn main(@builtin(local_invocation_index) i:u32){b[i]=a[i]*3u+1u;}'}),p=await d.createComputePipelineAsync({layout:'auto',compute:{module:m}}),g=d.createBindGroup({layout:p.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:ib}},{binding:1,resource:{buffer:ob}}]});d.queue.writeBuffer(ib,0,input);const s=performance.now(),e=d.createCommandEncoder(),c=e.beginComputePass();c.setPipeline(p);c.setBindGroup(0,g);c.dispatchWorkgroups(1);c.end();e.copyBufferToBuffer(ob,0,rb,0,16);d.queue.submit([e.finish()]);await rb.mapAsync(GPUMapMode.READ);const values=Array.from(new Uint32Array(rb.getMappedRange()));postMessage({navigatorGPU:true,values,correct:JSON.stringify(values)==='[4,7,10,13]',elapsedMs:performance.now()-s,features:Array.from(d.features)});d.destroy()}catch(e){fail(e)}}`;
     const worker = ctx.worker(source), answer = await ctx.workerRequest(worker, {}, [], 30000);
-    if (answer.error) return ctx.result('FAIL', `Worker WebGPU failed: ${answer.error.message}`, { failureEvents: [answer.error] }, { claimed: 'OBSERVED', admitted: 'FAIL' });
+    if (answer.error) return ctx.result(/no adapter/i.test(answer.error.message) ? 'BLOCKED' : 'FAIL', `Worker WebGPU failed: ${answer.error.message}`, { failureEvents: [answer.error] }, { claimed: 'OBSERVED', admitted: 'FAIL' });
     const mainStart = performance.now(), main = await H.gpuCorrectness(ctx), mainMs = performance.now() - mainStart;
     return ctx.result(answer.correct && main.correct ? 'PASS' : 'FAIL', answer.correct ? 'A DedicatedWorker owned the GPU through correct readback; the main-thread route was measured beside it.' : 'Worker GPU readback was incorrect.', {
       browserClaims: { mainNavigatorGPU: true, WorkerNavigatorGPU: answer.navigatorGPU }, observations: { worker: answer, main }, rawMeasurements: { workerMs: H.round(answer.elapsedMs), mainMs: H.round(mainMs) }, correctnessChecks: { workerCorrect: answer.correct, mainCorrect: main.correct },
@@ -1662,11 +1664,14 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     }
     ctx.phase('Running WebGPU image kernel', 'Dawn receives the same packed RGBA inversion.', .72);
     let gpu; try { gpu = await webgpuImageKernel(ctx); } catch (error) { gpu = { error: H.errorRecord(error), correct: false }; }
-    const correct = [main, workerResult, gpu].filter(item => item.exposed !== false && !item.error).every(item => item.correct);
-    return ctx.result(correct ? 'PASS' : 'PARTIAL', `Main WebGL2: ${main.correct ? 'correct' : 'failed'}; worker WebGL2: ${workerResult.correct ? 'correct' : 'failed'}; WebGPU: ${gpu.correct ? 'correct' : 'failed'}.`, {
+    const attempted = [main, workerResult, gpu].filter(item => item.exposed !== false);
+    const completed = attempted.filter(item => !item.error);
+    const correct = completed.length > 0 && completed.every(item => item.correct);
+    const routeStatus = !completed.length ? 'BLOCKED' : correct && completed.length === attempted.length ? 'PASS' : 'PARTIAL';
+    return ctx.result(routeStatus, `Main WebGL2: ${main.correct ? 'correct' : 'failed'}; worker WebGL2: ${workerResult.correct ? 'correct' : 'failed'}; WebGPU: ${gpu.correct ? 'correct' : 'failed'}.`, {
       browserClaims: { webgl2: !!document.createElement('canvas').getContext('webgl2'), OffscreenCanvas: typeof OffscreenCanvas === 'function', webgpu: !!navigator.gpu }, observations: { mainWebGL2: main, workerWebGL2: workerResult, webgpu: gpu }, correctnessChecks: { main: main.correct, worker: workerResult.correct, webgpu: gpu.correct },
       presentation: { metrics: [ctx.metric('WebGL2 main', main.error ? main.error.name : `${H.round(main.elapsedMs)} ms`), ctx.metric('WebGL2 worker', workerResult.error ? workerResult.error.name : `${H.round(workerResult.elapsedMs)} ms`), ctx.metric('WebGPU', gpu.error ? gpu.error.name : `${H.round(gpu.elapsedMs)} ms`), ctx.metric('main correct', main.correct), ctx.metric('worker correct', workerResult.correct), ctx.metric('WebGPU correct', gpu.correct)], comparison: [ctx.compare('WebGL2 main', 'ANGLE route exposed', main.correct ? 'correct 200-frame kernel' : 'failed'), ctx.compare('WebGL2 worker', 'Offscreen route exposed', workerResult.correct ? 'correct 200-frame kernel' : 'failed'), ctx.compare('WebGPU', 'Dawn route exposed', gpu.correct ? 'correct 200-frame kernel' : 'failed')] }
-    }, { claimed: 'OBSERVED', admitted: correct ? 'PASS' : 'PARTIAL', executed: correct ? 'PASS' : 'PARTIAL', correct: correct ? 'PASS' : 'PARTIAL', sustained: '200 ITERATIONS', useful: 'COMPARED' });
+    }, { claimed: 'OBSERVED', admitted: completed.length ? 'PASS' : 'FAIL', executed: completed.length ? 'PASS' : 'NOT TESTED', correct: correct ? 'PASS' : completed.length ? 'PARTIAL' : 'NOT TESTED', sustained: completed.length ? '200 ITERATIONS' : 'NOT TESTED', useful: completed.length ? 'COMPARED' : 'NOT TESTED' });
   };
 
   R.cameraGPU = async ctx => {
@@ -1697,7 +1702,10 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   R.gpuWasmBus = async ctx => {
     if (!navigator.gpu || typeof WebAssembly!=='object') return missing(ctx,'GPU ↔ WASM bus');
-    const {device}=await ctx.gpu(),compiled=await H.compileWasm(H.checksumBytes()),memory=compiled.instance.exports.memory,sizes=[1024,65536,1048576,4194304,16777216],rows=[];
+    let pair;
+    try { pair = await ctx.gpu(); }
+    catch (error) { return ctx.result('BLOCKED', `WebGPU was exposed, but the bridge could not obtain a device: ${error.message}`, { browserClaims: { navigatorGPU: true }, failureEvents: [H.errorRecord(error)] }, { claimed: 'OBSERVED', admitted: 'FAIL' }); }
+    const {device}=pair,compiled=await H.compileWasm(H.checksumBytes()),memory=compiled.instance.exports.memory,sizes=[1024,65536,1048576,4194304,16777216],rows=[];
     for(let i=0;i<sizes.length;i++){
       const bytes=sizes[i],pages=Math.ceil(bytes/65536),have=memory.buffer.byteLength/65536;if(pages>have)memory.grow(pages-have);const view=new Uint8Array(memory.buffer,0,bytes);view.fill(0);view[0]=7;view[bytes-1]=11;
       ctx.phase(`Bridging ${H.round(H.mib(bytes),4)} MiB`, 'WASM view → GPU buffer → GPU copy → mapped readback → WASM view', (i+1)/sizes.length);
@@ -1720,7 +1728,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     try{support.encoder=await VideoEncoder.isConfigSupported(config)}catch(error){support.encoder={error:H.errorRecord(error)}}
     const chunks=[],errors=[];ctx.phase('Encoding synthetic VideoFrames','Sixty deterministic frames through VP8.',.16);
     const encoder=new VideoEncoder({output:(chunk,metadata)=>{const copy=new Uint8Array(chunk.byteLength);chunk.copyTo(copy);chunks.push({type:chunk.type,timestamp:chunk.timestamp,duration:chunk.duration,data:copy,metadata})},error:e=>errors.push(H.errorRecord(e))});
-    encoder.configure(config);const canvas=new OffscreenCanvas(width,height),g=canvas.getContext('2d');const encodeStart=performance.now();
+    encoder.configure(config);const canvas=typeof OffscreenCanvas==='function'?new OffscreenCanvas(width,height):Object.assign(document.createElement('canvas'),{width,height}),g=canvas.getContext('2d');const encodeStart=performance.now();
     for(let i=0;i<60;i++){g.fillStyle=`rgb(${i%256},${i*3%256},${i*7%256})`;g.fillRect(0,0,width,height);const frame=new VideoFrame(canvas,{timestamp:i*33333,duration:33333});encoder.encode(frame,{keyFrame:i===0});frame.close();}
     await encoder.flush();const encodeMs=performance.now()-encodeStart;encoder.close();
     ctx.phase('Decoding the produced chunks','Every decoded VideoFrame is counted and closed.',.62);let decoded=0,firstDecoded=null;const decoderConfig={codec:'vp8',codedWidth:width,codedHeight:height};
@@ -2001,6 +2009,8 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   R.cpuGpuContention = async ctx => {
     if (!navigator.gpu || typeof Worker !== 'function') return ctx.result('UNAVAILABLE','CPU + GPU contention requires WebGPU and DedicatedWorker.',{browserClaims:{webgpu:!!navigator.gpu,Worker:typeof Worker==='function'}},{claimed:'UNAVAILABLE'});
+    const adapterCheck = await navigator.gpu.requestAdapter();
+    if (!adapterCheck) return ctx.result('BLOCKED','navigator.gpu is exposed, but no GPUAdapter was admitted for the contention test.',{browserClaims:{webgpu:true},observations:{adapter:null}},{claimed:'OBSERVED',admitted:'FAIL'});
     const workers = Math.min(6, Math.max(2, navigator.hardwareConcurrency || 2)), duration = fastDuration(3000);
     ctx.phase('CPU only', `${workers} workers for ${duration/1000} seconds.`, .08); const cpuOnly = await cpuLoad(ctx,duration,workers);
     ctx.phase('GPU only', 'Repeated 1 MiB compute dispatches.', .34); const gpuOnly = await gpuLoad(ctx,duration);
@@ -2014,6 +2024,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   R.gpuCamera = async ctx => {
     if(!navigator.gpu||!navigator.mediaDevices)return ctx.result('UNAVAILABLE','GPU + camera contention requires WebGPU and camera.',{browserClaims:{webgpu:!!navigator.gpu,camera:!!navigator.mediaDevices}},{claimed:'UNAVAILABLE'});
+    const adapterCheck=await navigator.gpu.requestAdapter();if(!adapterCheck)return ctx.result('BLOCKED','navigator.gpu is exposed, but no GPUAdapter was admitted for the camera contention test.',{browserClaims:{webgpu:true,camera:true}},{claimed:'OBSERVED',admitted:'FAIL'});
     const {video}=await ctx.camera(),duration=fastDuration(5000);ctx.phase('Camera baseline','Counting delivered frames without GPU saturation.',.08);const baseline=await cameraRate(ctx,video,duration,'Camera baseline');
     ctx.phase('Camera while GPU is saturated','The frame pipeline and GPU now compete.',.52);const [loaded,gpu]=await Promise.all([cameraRate(ctx,video,duration,'Camera + GPU'),gpuLoad(ctx,duration)]);const fpsDrop=degradation(loaded.fps,baseline.fps),correct=loaded.frames>5&&gpu.dispatches>0;
     return ctx.result(correct?'PASS':'PARTIAL',`Camera delivered ${H.round(loaded.fps)} FPS under GPU load versus ${H.round(baseline.fps)} FPS alone, a ${fpsDrop}% change.`,{
@@ -2024,6 +2035,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   R.mediaGpuWasm = async ctx => {
     if(!navigator.gpu||typeof WebAssembly!=='object'||typeof Worker!=='function')return ctx.result('UNAVAILABLE','This contention test requires WebGPU, WebAssembly, and workers.',{browserClaims:{webgpu:!!navigator.gpu,wasm:typeof WebAssembly==='object',worker:typeof Worker==='function'}},{claimed:'UNAVAILABLE'});
+    const adapterCheck=await navigator.gpu.requestAdapter();if(!adapterCheck)return ctx.result('BLOCKED','navigator.gpu is exposed, but no GPUAdapter was admitted for the combined load.',{browserClaims:{webgpu:true,wasm:true,worker:true}},{claimed:'OBSERVED',admitted:'FAIL'});
     const solo=fastDuration(2200),together=fastDuration(5000);ctx.phase('Measuring media alone','WebCodecs VP8 encode load.',.06);const mediaOnly=await mediaLoad(ctx,solo);ctx.phase('Measuring GPU alone','Compute saturation.',.2);const gpuOnly=await gpuLoad(ctx,solo);ctx.phase('Measuring WASM worker alone','Scalar WASM worker load.',.36);const wasmOnly=await cpuLoad(ctx,solo,1,true);
     ctx.phase('Media + GPU + WASM together','All three roads now execute simultaneously.',.54);const [mediaBoth,gpuBoth,wasmBoth]=await Promise.all([mediaLoad(ctx,together),gpuLoad(ctx,together),cpuLoad(ctx,together,1,true)]);
     const changes={media:degradation(mediaBoth.framesPerSecond,mediaOnly.framesPerSecond),gpu:degradation(gpuBoth.elementsPerSecond,gpuOnly.elementsPerSecond),wasm:degradation(wasmBoth.aggregateOpsPerSecond,wasmOnly.aggregateOpsPerSecond)},correct=mediaBoth.frames>0&&gpuBoth.dispatches>0&&wasmBoth.totalOps>0;
@@ -2067,7 +2079,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
   };
 
   R.gpuSustained = async ctx => {
-    if(!navigator.gpu)return ctx.result('UNAVAILABLE','WebGPU is unavailable.',{},{claimed:'UNAVAILABLE'});const duration=fastDuration(600000);ctx.phase('Sustaining GPU load',`${duration/60000} minute target · CANCEL remains live.`,.01);const load=await gpuLoad(ctx,duration,(item)=>ctx.phase('Sustaining GPU load',`${H.round(item.elapsedMs/1000)} s · ${H.round(item.elementsPerSecond)} elements/s`,Math.min(.99,item.elapsedMs/duration))),summary=summarizeSeries(load.samples,'elementsPerSecond');
+    if(!navigator.gpu)return ctx.result('UNAVAILABLE','WebGPU is unavailable.',{},{claimed:'UNAVAILABLE'});const adapterCheck=await navigator.gpu.requestAdapter();if(!adapterCheck)return ctx.result('BLOCKED','navigator.gpu is exposed, but no GPUAdapter was admitted for the sustained run.',{browserClaims:{webgpu:true}},{claimed:'OBSERVED',admitted:'FAIL'});const duration=fastDuration(600000);ctx.phase('Sustaining GPU load',`${duration/60000} minute target · CANCEL remains live.`,.01);const load=await gpuLoad(ctx,duration,(item)=>ctx.phase('Sustaining GPU load',`${H.round(item.elapsedMs/1000)} s · ${H.round(item.elementsPerSecond)} elements/s`,Math.min(.99,item.elapsedMs/duration))),summary=summarizeSeries(load.samples,'elementsPerSecond');
     return ctx.result(load.dispatches>0&&!load.deviceLoss.length?'PASS':'PARTIAL',`GPU sustained run completed. Peak ${summary.peak} elements/s; stable tail ${summary.stable}; ${summary.degradationPercent}% below peak. Device-loss events: ${load.deviceLoss.length}.`,{
       requestedValues:{durationMs:duration},observations:{dispatches:load.dispatches,deviceLoss:load.deviceLoss,adapter:load.adapter},rawMeasurements:{series:load.samples,summary},sustainedMeasurements:summary,correctnessChecks:{dispatches:load.dispatches,deviceLoss:load.deviceLoss.length},
       presentation:{metrics:[ctx.metric('duration',load.durationMs/1000,'s'),ctx.metric('dispatches',load.dispatches),ctx.metric('initial',summary.initial,'elements/s'),ctx.metric('peak',summary.peak,'elements/s'),ctx.metric('1 minute',summary.oneMinute,'elements/s'),ctx.metric('5 minute',summary.fiveMinute,'elements/s'),ctx.metric('stable',summary.stable,'elements/s'),ctx.metric('peak loss',summary.degradationPercent,'%'),ctx.metric('device loss',load.deviceLoss.length)],comparison:[ctx.compare('advertised GPU','WebGPU admitted',`stable ${summary.stable} elements/s`)]}
