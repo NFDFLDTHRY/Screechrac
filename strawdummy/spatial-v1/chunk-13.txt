@@ -1,0 +1,7 @@
+v.acceptedAttempt]))},null,2);}
+function download(){const blob=new Blob([JSON.stringify(state.session,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`strawdummy-spatial-${Date.now()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+
+$('runBtn').onclick=runCurrent; $('repeatBtn').onclick=runCurrent; $('rawBtn').onclick=()=>{state.rawOpen=!state.rawOpen;renderRaw();}; $('continueBtn').onclick=()=>{acceptCurrent();if(state.index<SLIDES.length-1){state.index++;render();}}; $('prevBtn').onclick=()=>{if(state.index>0){state.index--;render();}}; $('exportBtn').onclick=download; $('resetBtn').onclick=()=>{if(!confirm('Start a new StrawDummy session? Existing evidence remains only if you exported it.'))return;try{state.stream?.getTracks().forEach(t=>t.stop())}catch{};localStorage.removeItem(KEY);location.reload();};
+window.addEventListener('beforeunload',()=>{try{state.stream?.getTracks().forEach(t=>t.stop())}catch{}});
+render();
+})();
