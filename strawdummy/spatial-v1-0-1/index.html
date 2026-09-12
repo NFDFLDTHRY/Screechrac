@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta http-equiv="Cache-Control" content="no-store"><title>StrawDummy Spatial Capability Interrogator v1.0.1</title></head><body style="margin:0;background:#080b0e;color:#f1f5f9;font-family:monospace"><div id="boot" style="padding:20px">Loading StrawDummy v1.0.1…</div><script>
+(async()=>{
+  const OLD='../spatial-v1/';
+  const TIMEOUT_MS=10000;
+  try{
+    const indexText=await (await fetch(OLD+'index.html',{cache:'no-store'})).text();
+    const doc=new DOMParser().parseFromString(indexText,'text/html');
+    document.head.innerHTML=doc.head.innerHTML;
+    for(const s of [...document.head.querySelectorAll('script')]) s.remove();
+    document.body.innerHTML=doc.body.innerHTML;
+    for(const s of [...document.body.querySelectorAll('script')]) s.remove();
+
+    const md=navigator.mediaDevices;
+    if(md?.getUserMedia){
+      const nativeGUM=md.getUserMedia.bind(md);
+      const wrapped=function(constraints){
+        let timedOut=false;
+        let timer;
+        const nativePromise=nativeGUM(constraints).then(stream=>{
+          if(timedOut){
+            try{stream.getTracks().forEach(t=>t.stop())}catch(_){}
+            throw new DOMException(`getUserMedia resolved after ${TIMEOUT_MS} ms timeout; late stream stopped`,'TimeoutError');
+          }
+          return stream;
+        });
+        const timeout=new Promise((_,reject)=>{
+          timer=setTimeout(()=>{
+            timedOut=true;
+            reject(new DOMException(`getUserMedia remained pending for ${TIMEOUT_MS} ms`,'TimeoutError'));
+          },TIMEOUT_MS);
+        });
+        return Promise.race([nativePromise,timeout]).finally(()=>clearTimeout(timer));
+      };
+      try{Object.defineProperty(md,'getUserMedia',{value:wrapped,configurable:true,writable:true});}
+      catch(_){try{md.getUserMedia=wrapped}catch(__){}}
+    }
+
+    const files=Array.from({length:14},(_,i)=>OLD+`chunk-${String(i).padStart(2,'0')}.txt`);
+    const chunks=[];
+    for(const f of files){const r=await fetch(f,{cache:'no-store'});if(!r.ok)throw new Error(`${f}: HTTP ${r.status}`);chunks.push(await r.text());}
+    let source=chunks.join('');
+    source=source.replace("const BUILD = 'strawdummy-spatial-primitives-v1.0.0';","const BUILD = 'strawdummy-spatial-primitives-v1.0.1';");
+    source=source.replace("const KEY = 'strawdummy:spatial-capabilities:v1';","const KEY = 'strawdummy:spatial-capabilities:v1.0.1';");
+    new Function(source)();
+  }catch(e){
+    document.body.innerHTML=`<pre style="white-space:pre-wrap;padding:20px">BOOT FAIL\n${e?.name||'Error'}: ${e?.message||e}</pre>`;
+    console.error(e);
+  }
+})();
+</script></body></html>
