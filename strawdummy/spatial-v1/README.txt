@@ -1,0 +1,1 @@
+StrawDummy spatial capability interrogator v1 build scaffold.
