@@ -1,0 +1,29 @@
+rn Reflect.ownKeys(obj).map(String).sort()}catch{return[]}})();
+  const proto=[]; let p=obj; let depth=0;
+  while(p && depth<3){try{proto.push(...Reflect.ownKeys(p).map(String))}catch{} p=Object.getPrototypeOf(p); depth++;}
+  return {ownKeys:own, nearbyPrototypeKeys:[...new Set(proto)].sort()};
+}
+function globalSurface(name){
+  const exists = name in globalThis;
+  let type=null, descriptor=null;
+  if(exists){try{type=typeof globalThis[name]}catch{};try{descriptor=Object.getOwnPropertyDescriptor(globalThis,name)||null}catch{}}
+  return {exists,type,descriptor:descriptor?{writable:descriptor.writable,enumerable:descriptor.enumerable,configurable:descriptor.configurable,get:!!descriptor.get,set:!!descriptor.set}:null};
+}
+function nearbyGlobals(){
+  const re=/(sensor|orientation|motion|camera|video|media|image|track|capture|frame|magnet|accel|gyro|gravity)/i;
+  return Reflect.ownKeys(globalThis).map(String).filter(k=>re.test(k)).sort();
+}
+function summarizeSamples(samples, axes=['x','y','z']){
+  const out={count:samples.length}; if(samples.length<2)return out;
+  const pts=samples.map(s=>s.pageTimeMs).filter(Number.isFinite); const gaps=pts.slice(1).map((t,i)=>t-pts[i]);
+  out.durationMs=+(pts.at(-1)-pts[0]).toFixed(3); out.observedHz=out.durationMs>0?+((samples.length-1)/(out.durationMs/1000)).toFixed(2):null; out.longestGapMs=gaps.length?+Math.max(...gaps).toFixed(3):null;
+  out.axes={}; for(const a of axes){const vals=samples.map(s=>s[a]).filter(Number.isFinite);if(vals.length)out.axes[a]={min:+Math.min(...vals).toFixed(5),max:+Math.max(...vals).toFixed(5),range:+(Math.max(...vals)-Math.min(...vals)).toFixed(5)};}
+  return out;
+}
+function deltaScore(a,b,axes=['x','y','z']){const sa=summarizeSamples(a,axes), sb=summarizeSamples(b,axes);let score=0;for(const ax of axes){score+=Math.abs((sb.axes?.[ax]?.range||0)-(sa.axes?.[ax]?.range||0));}return +score.toFixed(5);}
+function setPhase(text,detail=''){ $('phaseText').textContent=text; $('phaseDetail').textContent=detail; }
+function setStatus(text,kind=''){const el=$('status');el.className='status '+kind;el.textContent=text;}
+function displayAttempt(attempt){
+  const verdict=attempt?.normalized?.verdict||'UNKNOWN';
+  const kind=['CHARACTERIZED','RESPONSIVE','EMITTING','STARTED','CONSTRUCTED','EXPOSED','PASS'].includes(verdict)?'good':(['ABSENT','BLOCKED','FAIL'].includes(verdict)?'bad':'warn');
+  setStatus(`${verdic
