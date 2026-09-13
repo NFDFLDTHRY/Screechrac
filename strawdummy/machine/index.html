@@ -105,7 +105,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 (function () {
   'use strict';
 
-  const BUILD = 'strawdummy-machine-surface-v1.0.1';
+  const BUILD = 'strawdummy-machine-surface-v1.0.2';
   const SCHEMA = 'strawdummy/machine-surface-v1';
   const EVIDENCE_FORMAT = 'compact-prerequisite-references-v1';
   const STORE_KEY = 'strawdummy:machine-surface:v1';
@@ -1182,7 +1182,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     const observations = { secureContext: isSecureContext, crossOriginIsolated, sharedArrayBuffer: typeof SharedArrayBuffer === 'function' };
     if (navigator.permissions) {
       observations.permissions = {};
-      for (const name of ['camera', 'microphone', 'accelerometer', 'gyroscope', 'magnetometer']) {
+      for (const name of ['camera', 'microphone', 'accelerometer', 'gyroscope', 'magnetometer', 'persistent-storage']) {
         try { observations.permissions[name] = (await navigator.permissions.query({ name })).state; }
         catch (error) { observations.permissions[name] = { error: H.errorRecord(error) }; }
       }
@@ -1191,6 +1191,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     if (navigator.storage) {
       try { observations.persistedBefore = await navigator.storage.persisted(); } catch (error) { observations.persistedBefore = H.errorRecord(error); }
       try { observations.persistRequest = await navigator.storage.persist(); } catch (error) { observations.persistRequest = H.errorRecord(error); }
+      try { observations.persistedAfter = await navigator.storage.persisted(); } catch (error) { observations.persistedAfter = H.errorRecord(error); }
       try { observations.storageEstimate = await navigator.storage.estimate(); } catch (error) { observations.storageEstimate = H.errorRecord(error); }
     }
     const workerSource = `self.onmessage=e=>postMessage({value:e.data+1,worker:true})`;
@@ -1213,9 +1214,9 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     const passed = isSecureContext && workerCorrect;
     ctx.phase('Gate map complete', 'Failures here explain downstream blocks.', 1);
     return ctx.result(passed ? 'PASS' : 'PARTIAL', passed ? 'The secure origin and worker execution gate were proven; remaining gates are recorded individually.' : 'One or more foundational origin gates are closed.', {
-      browserClaims: { secureContext: isSecureContext, crossOriginIsolated, sharedArrayBuffer: typeof SharedArrayBuffer === 'function', permissionsAPI: !!navigator.permissions },
+      browserClaims: { origin: location.origin, secureContext: isSecureContext, crossOriginIsolated, sharedArrayBuffer: typeof SharedArrayBuffer === 'function', permissionsAPI: !!navigator.permissions },
       observations, correctnessChecks: { workerRoundTrip42: workerCorrect },
-      presentation: { metrics: [ctx.metric('HTTPS / secure', isSecureContext), ctx.metric('COI', crossOriginIsolated), ctx.metric('SharedArrayBuffer', typeof SharedArrayBuffer === 'function'), ctx.metric('classic worker', workerCorrect), ctx.metric('module worker', observations.moduleWorker && observations.moduleWorker.moduleWorker === true), ctx.metric('AudioWorklet module', observations.audioWorkletModule)], comparison: [ctx.compare('worker', 'Worker constructor exposed', workerCorrect ? 'executed correct round trip' : 'not proven'), ctx.compare('persistent storage', 'StorageManager API', observations.persistRequest)] }
+      presentation: { metrics: [ctx.metric('origin', location.origin), ctx.metric('HTTPS / secure', isSecureContext), ctx.metric('COI', crossOriginIsolated), ctx.metric('SharedArrayBuffer', typeof SharedArrayBuffer === 'function'), ctx.metric('classic worker', workerCorrect), ctx.metric('module worker', observations.moduleWorker && observations.moduleWorker.moduleWorker === true), ctx.metric('AudioWorklet module', observations.audioWorkletModule), ctx.metric('persisted before', observations.persistedBefore), ctx.metric('persist() returned', observations.persistRequest), ctx.metric('persisted after', observations.persistedAfter)], comparison: [ctx.compare('worker', 'Worker constructor exposed', workerCorrect ? 'executed correct round trip' : 'not proven'), ctx.compare(`persistent storage · ${location.origin}`, 'origin-scoped request', observations.persistedAfter === true ? 'GRANTED FOR THIS ORIGIN' : 'NOT GRANTED FOR THIS ORIGIN')] }
     }, { claimed: 'OBSERVED', admitted: passed ? 'PASS' : 'PARTIAL', executed: workerCorrect ? 'PASS' : 'PARTIAL', correct: workerCorrect ? 'PASS' : 'NOT TESTED', sustained: 'NOT TESTED', useful: 'NOT TESTED' });
   };
 
@@ -1273,10 +1274,10 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
   R.workerScaling = async ctx => {
     if (typeof Worker !== 'function') return unavailable(ctx, 'DedicatedWorker');
     const result = await scaleWorkers(ctx, false);
-    return ctx.result('PASS', `Useful JavaScript worker count for this kernel was ${result.bestWorkers}; Chrome claimed ${result.claimed} logical lanes.`, {
-      browserClaims: { hardwareConcurrency: result.claimed }, requestedValues: { workersThrough: result.maxTested }, observations: result, rawMeasurements: { scalingCurve: result.rows }, correctnessChecks: { allWorkersReturned: true },
-      presentation: { metrics: [ctx.metric('claimed lanes', result.claimed), ctx.metric('best workers', result.bestWorkers), ctx.metric('best aggregate', result.bestOpsPerSecond, 'ops/s'), ctx.metric('scaling vs 1', result.scaling, '×'), ctx.metric('regression starts', result.regressionAt)], comparison: [ctx.compare('parallel lanes', result.claimed, result.bestWorkers)] }
-    }, { ...passLadder, sustained: 'SHORT RUN', useful: 'PASS' });
+    return ctx.result('PASS', `All worker counts executed correctly. In this single short ascending sweep, peak aggregate throughput occurred at ${result.bestWorkers} workers; that is a candidate, not a proven useful-lane count.`, {
+      browserClaims: { hardwareConcurrency: result.claimed }, requestedValues: { workersThrough: result.maxTested, order: 'ascending', repetitionsPerCount: 1, nominalDurationMs: 360 }, observations: { ...result, candidateOnly: true }, rawMeasurements: { scalingCurve: result.rows }, correctnessChecks: { allWorkersReturned: true },
+      presentation: { metrics: [ctx.metric('claimed lanes', result.claimed), ctx.metric('short-run peak count', result.bestWorkers), ctx.metric('best aggregate', result.bestOpsPerSecond, 'ops/s'), ctx.metric('scaling vs 1', result.scaling, '×'), ctx.metric('regression starts', result.regressionAt), ctx.metric('useful lane count', 'NOT YET PROVEN')], comparison: [ctx.compare('parallel lanes', result.claimed, `${result.bestWorkers} PEAK IN ONE SHORT SWEEP`)] }
+    }, { ...passLadder, sustained: 'SHORT RUN', useful: 'NOT PROVEN' });
   };
 
   R.wasmScalar = async ctx => {
@@ -1348,7 +1349,24 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   R.sharedMemory = async ctx => {
     const claims = { sharedArrayBuffer: typeof SharedArrayBuffer === 'function', crossOriginIsolated, atomics: typeof Atomics === 'object', waitAsync: typeof Atomics.waitAsync === 'function' };
-    if (!claims.sharedArrayBuffer) return unavailable(ctx, 'SharedArrayBuffer + WASM threads', claims);
+    if (!claims.sharedArrayBuffer) {
+      const isolationGateClosed = !crossOriginIsolated;
+      return ctx.result(isolationGateClosed ? 'BLOCKED' : 'UNAVAILABLE', isolationGateClosed
+        ? 'SharedArrayBuffer is hidden because this origin is not cross-origin isolated. This is an origin/header gate, not a CPU or WASM capability verdict.'
+        : 'SharedArrayBuffer is not exposed even though the page reports cross-origin isolation.', {
+        browserClaims: { ...claims, origin: location.origin },
+        observations: {
+          exposed: false,
+          gate: isolationGateClosed ? 'CROSS-ORIGIN ISOLATION CLOSED' : 'UNKNOWN',
+          requiredResponseHeaders: isolationGateClosed ? { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp or credentialless' } : null,
+          deviceCapabilityConclusionAllowed: false
+        },
+        presentation: {
+          metrics: [ctx.metric('origin', location.origin), ctx.metric('cross-origin isolated', crossOriginIsolated), ctx.metric('SharedArrayBuffer', 'NOT EXPOSED'), ctx.metric('machine verdict', 'NOT TESTED')],
+          comparison: [ctx.compare('shared memory', claims.sharedArrayBuffer ? 'EXPOSED' : 'NOT EXPOSED', isolationGateClosed ? 'BLOCKED BY COOP/COEP GATE' : 'CAUSE UNKNOWN'), ctx.compare('Pixel capability', 'NOT TESTED', 'NO NEGATIVE INFERENCE')]
+        }
+      }, { claimed: 'NOT EXPOSED', admitted: isolationGateClosed ? 'BLOCKED BY ORIGIN GATE' : 'NOT TESTED', executed: 'NOT TESTED', correct: 'NOT TESTED', sustained: 'NOT TESTED', useful: 'NOT TESTED' });
+    }
     ctx.phase('Constructing shared WASM memory', 'Two workers will mutate the same atomic word.', 0.15);
     let memory;
     try { memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: true }); }
@@ -1374,10 +1392,10 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
   R.threadedWasm = async ctx => {
     if (typeof Worker !== 'function' || typeof WebAssembly !== 'object') return unavailable(ctx, 'threaded WASM');
     const result = await scaleWorkers(ctx, true);
-    return ctx.result('PASS', `Useful scalar-WASM worker count for this kernel was ${result.bestWorkers}; the browser claimed ${result.claimed} logical lanes.`, {
-      browserClaims: { hardwareConcurrency: result.claimed, wasm: true }, requestedValues: { workersThrough: result.maxTested }, observations: result, rawMeasurements: { scalingCurve: result.rows }, correctnessChecks: { allWorkersReturned: true },
-      presentation: { metrics: [ctx.metric('claimed lanes', result.claimed), ctx.metric('best WASM workers', result.bestWorkers), ctx.metric('best aggregate', result.bestOpsPerSecond, 'calls/s'), ctx.metric('scaling', result.scaling, '×'), ctx.metric('regression starts', result.regressionAt)], comparison: [ctx.compare('threaded WASM lanes', result.claimed, result.bestWorkers)] }
-    }, { ...passLadder, sustained: 'SHORT RUN', useful: 'PASS' });
+    return ctx.result('PASS', `All scalar-WASM worker counts executed correctly. The ${result.bestWorkers}-worker peak came from one short ascending sweep and remains a candidate until repeated and sustained.`, {
+      browserClaims: { hardwareConcurrency: result.claimed, wasm: true }, requestedValues: { workersThrough: result.maxTested, order: 'ascending', repetitionsPerCount: 1, nominalDurationMs: 360 }, observations: { ...result, candidateOnly: true }, rawMeasurements: { scalingCurve: result.rows }, correctnessChecks: { allWorkersReturned: true },
+      presentation: { metrics: [ctx.metric('claimed lanes', result.claimed), ctx.metric('short-run WASM peak', result.bestWorkers), ctx.metric('best aggregate', result.bestOpsPerSecond, 'calls/s'), ctx.metric('scaling', result.scaling, '×'), ctx.metric('regression starts', result.regressionAt), ctx.metric('useful lane count', 'NOT YET PROVEN')], comparison: [ctx.compare('threaded WASM lanes', result.claimed, `${result.bestWorkers} PEAK IN ONE SHORT SWEEP`)] }
+    }, { ...passLadder, sustained: 'SHORT RUN', useful: 'NOT PROVEN' });
   };
 
   R.transferRace = async ctx => {
@@ -1941,7 +1959,30 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
   };
 
   R.webnn = async ctx => {
-    const ml=navigator.ml;if(!ml||typeof ml.createContext!=='function')return absent(ctx,'WebNN',{navigatorML:!!ml,MLGraphBuilder:typeof MLGraphBuilder==='function'});
+    const ml=navigator.ml;
+    const originTrialMeta=[...document.querySelectorAll('meta[http-equiv]')].filter(node=>String(node.httpEquiv||'').toLowerCase()==='origin-trial');
+    const chromeMajor=Number((navigator.userAgent.match(/(?:Chrome|CriOS)\/(\d+)/)||[])[1])||null;
+    const gateEvidence={
+      origin:location.origin,
+      secureContext:isSecureContext,
+      chromeMajor,
+      navigatorML:!!ml,
+      createContext:!!(ml&&typeof ml.createContext==='function'),
+      MLGraphBuilder:typeof MLGraphBuilder==='function',
+      originTrialTokenPresent:originTrialMeta.length>0,
+      standardFlag:'chrome://flags/#web-machine-learning-neural-network',
+      experimentalFlag:'chrome://flags/#experimental-web-machine-learning-neural-network'
+    };
+    if(!ml||typeof ml.createContext!=='function')return ctx.result('BLOCKED','The WebNN entry point is not exposed in this page. Chrome\'s runtime gate has not been satisfied here; the Pixel\'s ML hardware has not been tested.',{
+      browserClaims:gateEvidence,
+      observations:{exposed:false,gateDiagnosis:'WEBNN RUNTIME ENTRY POINT CLOSED',deviceCapabilityConclusionAllowed:false,nextProbe:'Enable the WebNN flag in Chrome, relaunch the browser, return to this slide, and repeat.'},
+      correctnessChecks:{webNNExecuted:false,hardwareAbsenceProven:false},
+      artifacts:[{type:'operator-remediation',steps:['Open chrome://flags/#web-machine-learning-neural-network','Set Enables WebNN API to Enabled','If navigator.ml remains absent, also enable chrome://flags/#experimental-web-machine-learning-neural-network','Relaunch Chrome','Return to Slide 32 and tap REPEAT']}],
+      presentation:{
+        metrics:[ctx.metric('Chrome major',chromeMajor),ctx.metric('navigator.ml','NOT EXPOSED'),ctx.metric('origin-trial token',originTrialMeta.length?'PRESENT':'ABSENT'),ctx.metric('Pixel ML hardware','NOT TESTED')],
+        comparison:[ctx.compare('WebNN entry point','NOT EXPOSED','BLOCKED AT RUNTIME GATE'),ctx.compare('standard Chrome flag',gateEvidence.standardFlag,'ENABLE + RELAUNCH'),ctx.compare('experimental flag',gateEvidence.experimentalFlag,'SECOND GATE IF NEEDED'),ctx.compare('device capability','NO EXECUTION','NO NEGATIVE VERDICT')]
+      }
+    },{claimed:'NOT EXPOSED',admitted:'BLOCKED BY RUNTIME GATE',executed:'NOT TESTED',correct:'NOT TESTED',sustained:'NOT TESTED',useful:'NOT TESTED'});
     ctx.phase('Creating a WebNN context','Trying the exposed current API shape without assuming a backend.',.15);const attempts=[];let context;
     for(const options of [{deviceType:'gpu'},{deviceType:'npu'},{deviceType:'cpu'},{}]){try{context=await ml.createContext(options);attempts.push({options,success:true});break}catch(error){attempts.push({options,error:H.errorRecord(error)})}}
     if(!context)return ctx.result('BLOCKED','navigator.ml exists, but no requested context was admitted.',{browserClaims:{navigatorML:true},requestedValues:{contextOptions:attempts.map(a=>a.options)},observations:{attempts}}, {claimed:'OBSERVED',admitted:'FAIL'});
@@ -2204,7 +2245,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
   R.machineReport = async ctx => {
     ctx.phase('Synthesizing accepted evidence','Only accepted attempts and KNOWN-PRIOR facts can enter the report.',.25);const accepted=acceptedResults(),get=(id,path)=>valueAt(accepted[id],path),report={
       identity:{fingerprint:get('01-machine-fingerprint','browserClaims.environment'),knownPriorFacts:SD.session.knownPriorFacts},
-      cpu:{claimedLanes:get('04-cpu-claims','browserClaims.hardwareConcurrency'),usefulJSWorkers:get('06-worker-scaling','observations.bestWorkers'),usefulWasmWorkers:get('11-threaded-wasm-scaling','observations.bestWorkers'),mainBaseline:get('05-one-cpu-lane','rawMeasurements.kernels'),stable:get('39-cpu-sustained-envelope','sustainedMeasurements')},
+      cpu:{claimedLanes:get('04-cpu-claims','browserClaims.hardwareConcurrency'),shortRunJSWorkerCandidate:get('06-worker-scaling','observations.bestWorkers'),shortRunWasmWorkerCandidate:get('11-threaded-wasm-scaling','observations.bestWorkers'),usefulJSWorkers:'UNRESOLVED UNTIL REPEATED/SUSTAINED',usefulWasmWorkers:'UNRESOLVED UNTIL REPEATED/SUSTAINED',mainBaseline:get('05-one-cpu-lane','rawMeasurements.kernels'),stable:get('39-cpu-sustained-envelope','sustainedMeasurements')},
       internalBus:{transferWinner4MiB:get('12-transfer-race','observations.bestAt4MiB'),storageRoutes:get('13-storage-bus','correctnessChecks.correctRoutes')},
       camera:{settings:get('14-camera-reality','grantedValues.settings'),cadence:get('14-camera-reality','observations.cadence'),bestExtraction:get('15-frame-extraction-race','observations.best'),cameraWasm:get('16-camera-wasm','rawMeasurements.averages'),cameraWorker:get('17-camera-worker','rawMeasurements.averages')},
       gpu:{knownPrior:Object.keys(SD.session.knownPriorFacts).filter(k=>/gpu|wgsl|vulkan|mali|workgroup|binding|timestamp/.test(k)),revalidated:get('18-gpu-revalidation','correctnessChecks.readbackCorrect'),limits:get('19-gpu-limit-attack','thresholds'),features:get('20-gpu-feature-attack','correctnessChecks'),worker:get('21-worker-webgpu','correctnessChecks'),cameraRoute:get('23-camera-gpu','observations.bestRoute'),stable:get('40-gpu-sustained-envelope','sustainedMeasurements')},
@@ -2227,19 +2268,19 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 (function () {
   'use strict';
   const S = globalThis.SD;
-  const slide = (id, ring, title, question, goal, runner, operator, detail) => ({ id, ring, title, question, goal, runner, operator, detail, version: '1.0.0' });
+  const slide = (id, ring, title, question, goal, runner, operator, detail, version = '1.0.0') => ({ id, ring, title, question, goal, runner, operator, detail, version });
   S.slides = [
     slide('01-machine-fingerprint','RING 0 · IDENTIFY THE WITNESS','Machine Fingerprint','What environment produced this evidence?','Capture Chrome’s testimony without promoting any capability claim.','fingerprint','Tap RUN to record this browser, origin, display, security context, and exposed API doors.','No permission prompt or benchmark belongs on this slide.'),
     slide('02-previous-evidence-import','RING 0 · IDENTIFY THE WITNESS','Previous Evidence Import','Which machine facts have our earlier experiments already earned?','Hash and import prior structured evidence, compare its fingerprint, and promote only explicit execution facts to KNOWN-PRIOR.','previousEvidence','Tap RUN, then choose one prior StrawDummy evidence JSON file.','Narrative mentions are preserved but never promoted.'),
     slide('03-security-gates','RING 0 · IDENTIFY THE WITNESS','Security Gates','Which browser gates actually control this origin?','Interrogate secure context, isolation, permissions, storage, workers, and AudioWorklet module admission independently.','securityGates','Tap RUN. Approve no hardware prompt; this slide tests origin gates.','Closed gates remain evidence and explain downstream blocks.'),
     slide('04-cpu-claims','RING 1 · CPU REALITY','CPU Claims','What does Chrome claim about the CPU surface?','Record logical lanes, device-memory bucket, CPU performance tier, and Compute Pressure exposure without benchmarking.','cpuClaims','Tap RUN to record CPU claims.','Slide 5 begins the cross-examination.'),
     slide('05-one-cpu-lane','RING 1 · CPU REALITY','One CPU Lane','What can one main-thread JavaScript lane actually do?','Establish deterministic integer, FP32, FP64, branch, memory, matrix, and image-kernel controls.','oneCpuLane','Tap RUN. The UI will pause briefly by design.','Warm-up is separated from the measured run.'),
-    slide('06-worker-scaling','RING 1 · CPU REALITY','Worker Scaling','How many JavaScript worker lanes are useful for this kernel?','Ramp beyond hardwareConcurrency and find the measured saturation and regression points.','workerScaling','Tap RUN to sweep 1 through the bounded worker maximum.','This takes several seconds and can be cancelled.'),
+    slide('06-worker-scaling','RING 1 · CPU REALITY','Worker Scaling','Where does aggregate JavaScript worker throughput peak in this short sweep?','Ramp beyond hardwareConcurrency and locate a candidate saturation region without promoting one short run to a useful-lane fact.','workerScaling','Tap RUN to sweep 1 through the bounded worker maximum.','The peak is provisional until repeated and sustained; it is not a physical-core count.','1.1.0'),
     slide('07-wasm-scalar','RING 2 · WASM MACHINE','WASM Scalar','Does scalar WebAssembly merely exist, or execute correctly and usefully?','Validate, compile, instantiate, run cold, then measure warm scalar calls.','wasmScalar','Tap RUN to execute the known add module.','Cold and warm paths are reported separately.'),
     slide('08-wasm-simd','RING 2 · WASM MACHINE','WASM SIMD','Do SIMD instructions execute correctly on this engine?','Execute an internal i32x4 addition with a scalar result boundary, then measure the call path.','wasmSimd','Tap RUN to validate and execute SIMD.','The microtest does not overclaim a general application speedup.'),
     slide('09-wasm-memory','RING 2 · WASM MACHINE','WASM Memory','How much WebAssembly memory is usable inside a safe bounded run?','Grow, touch, and repeatedly copy memory while separating a proven lower bound from an unmeasured ceiling.','wasmMemory','Tap RUN to grow through the 256 MiB safety cap.','This test does not intentionally destabilize the tab.'),
-    slide('10-shared-memory-atomics','RING 2 · WASM MACHINE','Shared Memory + Atomics','Can workers exchange exact state through shared WebAssembly memory?','Construct shared memory and prove cross-worker atomic mutation and coordination.','sharedMemory','Tap RUN to launch two atomic workers.','A closed isolation gate terminates as BLOCKED or UNAVAILABLE evidence.'),
-    slide('11-threaded-wasm-scaling','RING 2 · WASM MACHINE','Threaded WASM Scaling','How many WASM worker lanes are useful for this scalar kernel?','Run the same worker ladder with WebAssembly inside each worker.','threadedWasm','Tap RUN to sweep threaded WASM concurrency.','The useful count is workload-specific.'),
+    slide('10-shared-memory-atomics','RING 2 · WASM MACHINE','Shared Memory + Atomics','Can workers exchange exact state through shared WebAssembly memory?','Construct shared memory and prove cross-worker atomic mutation and coordination.','sharedMemory','Tap RUN to launch two atomic workers.','If GitHack lacks cross-origin isolation, the slide reports BLOCKED BY ORIGIN GATE—not unavailable machine hardware.','1.1.0'),
+    slide('11-threaded-wasm-scaling','RING 2 · WASM MACHINE','Threaded WASM Scaling','Where does aggregate scalar-WASM worker throughput peak in this short sweep?','Run the same worker ladder with WebAssembly inside each worker and preserve the peak as a candidate only.','threadedWasm','Tap RUN to sweep threaded WASM concurrency.','A useful count requires repeated and sustained confirmation.','1.1.0'),
     slide('12-transfer-race','RING 3 · THE INTERNAL BUS','Transfer Race','What are the real costs of moving bytes between execution lanes?','Race structured clone, transferable buffers, SharedArrayBuffer signaling, MessageChannel, and WASM views from 1 KiB through 64 MiB.','transferRace','Tap RUN to move six payload sizes through every admitted route.','Buffers are allocated sequentially and released by the runtime.'),
     slide('13-storage-bus','RING 3 · THE INTERNAL BUS','Storage Bus','Which persistent byte road is fastest and correct?','Compare IndexedDB, OPFS async, OPFS worker, and SyncAccessHandle using known 4 MiB bytes.','storageBus','Tap RUN to write, read, seek where available, and verify checksums.','The test removes only its own uniquely named temporary artifacts.'),
     slide('14-camera-reality','RING 4 · CAMERA MACHINE','Camera Reality','What camera did Chrome actually deliver?','Separate requested constraints, advertised capabilities, actual track settings, and measured frame cadence.','cameraReality','Tap RUN and approve the camera prompt if Chrome asks.','Keep the rear camera uncovered and the phone reasonably still.'),
@@ -2260,7 +2301,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     slide('29-motion-primitives','RING 8 · PHYSICAL SENSORS','Motion Primitives','Which independent motion primitives deliver samples and respond physically?','Measure accelerometer, linear acceleration, gravity, and gyroscope separately during a guided movement.','motionPrimitives','Tap RUN, then follow the large on-screen physical instructions.','Sequence: flat and still, lift and move, flat again.'),
     slide('30-orientation-magnetic','RING 8 · PHYSICAL SENSORS','Orientation + Magnetic','Which magnetic and orientation surfaces are independent, fused, responsive, or absent?','Compare relative orientation, absolute orientation, raw magnetometer, deviceorientation, and absolute events.','orientationMagnetic','Tap RUN, then rotate the phone exactly as instructed.','Sequence: flat, 90°, another 90°, return.'),
     slide('31-sensor-synchronization','RING 8 · PHYSICAL SENSORS','Sensor Synchronization','Can camera and motion streams be aligned on one meaningful timeline?','Capture camera, gyro, acceleration, and orientation timestamps while the phone moves.','sensorSync','Tap RUN, then hold still, move smoothly, and hold still again.','Nearest-timestamp error is measured for every delivered sensor stream.'),
-    slide('32-webnn-door','RING 9 · ML / SPECIAL ACCELERATORS','WebNN Door','Does WebNN exist, admit a context, execute a known graph, and return the right answer?','Try current context options, build y = x × 2, execute through the exposed API shape, and verify [2,4,6,8].','webnn','Tap RUN to interrogate WebNN.','API absence is useful evidence, not an application error.'),
+    slide('32-webnn-door','RING 9 · ML / SPECIAL ACCELERATORS','WebNN Door','Does WebNN admit a backend, execute a known graph, and return the right answer?','First diagnose Chrome\'s WebNN runtime gate; once exposed, try NPU, GPU, and CPU contexts, build y = x × 2, and verify [2,4,6,8].','webnn','Tap RUN. If the entry point is gated, follow the exact chrome://flags instructions, relaunch, then REPEAT this slide.','A closed runtime gate is BLOCKED evidence. It is never promoted to a negative Pixel hardware verdict.','1.1.0'),
     slide('33-native-detectors','RING 9 · ML / SPECIAL ACCELERATORS','Native Detector Door','Can a native detector return a verified answer on known synthetic input?','Feed Code 39, text, and face-like synthetic inputs to the detector constructors Chrome exposes.','nativeDetectors','Tap RUN to execute every exposed detector.','Empty or plausible-looking output is not marked correct without an expected answer.'),
     slide('34-peripheral-doors','RING 10 · OUTSIDE THE PHONE','Peripheral Doors','Which roads can extend the observed machine beyond the phone?','Probe Web Bluetooth, WebUSB, WebSerial, and Web NFC exposure, availability, and already-authorized devices.','peripherals','Tap RUN to inspect peripheral doors without opening pickers.','Device discovery and I/O remain NOT TESTED until a suitable peripheral is intentionally supplied.'),
     slide('35-cpu-gpu-contention','RING 11 · MAKE THEM FIGHT','CPU + GPU Contention','How much do CPU and GPU degrade when they run together?','Measure identical CPU and GPU loads alone, then simultaneously.','cpuGpuContention','Tap RUN for CPU-only, GPU-only, and combined phases.','Each phase is bounded and cancellable.'),
