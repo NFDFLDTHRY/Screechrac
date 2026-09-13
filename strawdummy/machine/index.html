@@ -105,8 +105,9 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 (function () {
   'use strict';
 
-  const BUILD = 'strawdummy-machine-surface-v1.0.0';
+  const BUILD = 'strawdummy-machine-surface-v1.0.1';
   const SCHEMA = 'strawdummy/machine-surface-v1';
+  const EVIDENCE_FORMAT = 'compact-prerequisite-references-v1';
   const STORE_KEY = 'strawdummy:machine-surface:v1';
   const DB_NAME = 'strawdummy-machine-surface';
   const DB_VERSION = 4;
@@ -125,10 +126,42 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     stack: error && error.stack ? String(error.stack).split('\n').slice(0, 5).join('\n') : null
   });
 
+  function prerequisiteReference(id, evidence) {
+    const item = evidence && typeof evidence === 'object' ? evidence : {};
+    return {
+      testId: item.testId || id,
+      testVersion: item.testVersion || null,
+      attemptId: item.attemptId || null,
+      completedAt: item.completedAt || null,
+      verdictStatus: item.verdict && item.verdict.status || item.verdictStatus || null
+    };
+  }
+
+  function compactPrerequisiteEvidence(evidence) {
+    const out = {};
+    if (!evidence || typeof evidence !== 'object') return out;
+    for (const [id, item] of Object.entries(evidence)) out[id] = prerequisiteReference(id, item);
+    return out;
+  }
+
+  function compactSessionEvidence(session) {
+    if (!session || typeof session !== 'object') return session;
+    session.evidenceFormat = EVIDENCE_FORMAT;
+    for (const slot of Object.values(session.slides || {})) {
+      if (!slot || !Array.isArray(slot.attempts)) continue;
+      for (const attempt of slot.attempts) {
+        if (!attempt || typeof attempt !== 'object') continue;
+        attempt.prerequisiteEvidence = compactPrerequisiteEvidence(attempt.prerequisiteEvidence);
+      }
+    }
+    return session;
+  }
+
   function freshSession() {
     return {
       schema: SCHEMA,
       build: BUILD,
+      evidenceFormat: EVIDENCE_FORMAT,
       sessionId: uid(),
       startedAt: now(),
       lastUpdatedAt: now(),
@@ -151,7 +184,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
         parsed.knownPriorFacts = parsed.knownPriorFacts || {};
         parsed.importedEvidence = parsed.importedEvidence || [];
         parsed.currentSlide = Math.max(0, Math.min(43, Number(parsed.currentSlide) || 0));
-        return parsed;
+        return compactSessionEvidence(parsed);
       }
     } catch (_) {}
     return freshSession();
@@ -176,6 +209,33 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
     });
+  }
+
+  async function recoverNewerIDBSession() {
+    const sessionId = SD.session && SD.session.sessionId;
+    if (!sessionId) return false;
+    const db = await openDB();
+    let recovered;
+    try {
+      recovered = await new Promise((resolve, reject) => {
+        const tx = db.transaction('sessions', 'readonly');
+        const req = tx.objectStore('sessions').get(sessionId);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error || new Error('IndexedDB recovery failed'));
+      });
+    } finally { db.close(); }
+    if (!recovered || recovered.schema !== SCHEMA || !recovered.slides) return false;
+    const recoveredTime = Date.parse(recovered.lastUpdatedAt || '') || 0;
+    const loadedTime = Date.parse(SD.session.lastUpdatedAt || '') || 0;
+    if (recoveredTime <= loadedTime) return false;
+    recovered.build = BUILD;
+    recovered.lifecycle = recovered.lifecycle || [];
+    recovered.knownPriorFacts = recovered.knownPriorFacts || {};
+    recovered.importedEvidence = recovered.importedEvidence || [];
+    recovered.currentSlide = Math.max(0, Math.min(43, Number(recovered.currentSlide) || 0));
+    recovered.recovery = { source: 'indexedDB', recoveredAt: now(), previousLoadedAt: SD.session.lastUpdatedAt || null };
+    SD.session = compactSessionEvidence(recovered);
+    return true;
   }
 
   async function persistIDB(attempt) {
@@ -206,6 +266,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
   }
 
   async function persist(attempt) {
+    compactSessionEvidence(SD.session);
     SD.session.lastUpdatedAt = now();
     const status = { localStorage: 'UNAVAILABLE', indexedDB: 'PENDING', opfs: 'PENDING' };
     try {
@@ -271,7 +332,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
       startedAt: ctx.startedAt,
       completedAt: now(),
       environmentFingerprint: ctx.environment,
-      prerequisiteEvidence: clone(ctx.prerequisites),
+      prerequisiteEvidence: compactPrerequisiteEvidence(ctx.prerequisites),
       browserClaims: clone(patch.browserClaims || {}),
       requestedValues: clone(patch.requestedValues || {}),
       grantedValues: clone(patch.grantedValues || {}),
@@ -582,6 +643,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   function exportEvidence() {
     const payload = clone(SD.session);
+    compactSessionEvidence(payload);
     payload.exportedAt = now();
     payload.exportSource = location.href;
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -606,12 +668,15 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
 
   SD.helpers = Object.assign(SD.helpers, {
     $, now, uid, clone, errorRecord, sleep, environmentFingerprint,
-    openDB, persist, resultFactory, format, makeWorker, workerRequest,
-    getCamera, getGPU
+    openDB, recoverNewerIDBSession, persist, resultFactory, format, makeWorker, workerRequest,
+    getCamera, getGPU, prerequisiteReference, compactPrerequisiteEvidence,
+    compactSessionEvidence
   });
 
-  SD.boot = function boot() {
+  SD.boot = async function boot() {
     if (SD.slides.length !== 44) throw new Error(`Expected 44 slides, found ${SD.slides.length}`);
+    try { await recoverNewerIDBSession(); }
+    catch (error) { SD.session.recovery = { source: 'localStorage', failedAt: now(), error: errorRecord(error) }; }
     const hash = location.hash.match(/slide-(\d+)/);
     const requested = hash ? Number(hash[1]) - 1 : Number(SD.session.currentSlide) || 0;
     SD.currentIndex = Math.max(0, Math.min(SD.slides.length - 1, requested));
@@ -635,7 +700,7 @@ main{padding-bottom:48px}.card{background:var(--panel);border:1px solid var(--li
     });
     addEventListener('pagehide', () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(SD.session)); } catch (_) {} });
     renderSlide();
-    persist();
+    await persist();
   };
 }());
 
